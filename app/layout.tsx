@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Your Name — Industrial Design Portfolio",
+  title: "Tyson Jiang — Industrial Design Portfolio",
   description: "Industrial design portfolio and case studies.",
 };
 
