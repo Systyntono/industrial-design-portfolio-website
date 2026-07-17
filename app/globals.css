@@ -1,0 +1,124 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), Arial, Helvetica, sans-serif;
+}
+
+.hide-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* older Edge */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes slide-in-left {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right ease-out both;
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left ease-out both;
+}
+
+@keyframes label-out {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(-40%); }
+}
+
+@keyframes label-in {
+  from { opacity: 0; transform: translateX(40%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes label-out-reverse {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(40%); }
+}
+
+@keyframes label-in-reverse {
+  from { opacity: 0; transform: translateX(-40%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.animate-label-out {
+  animation: label-out ease-in-out both;
+}
+
+.animate-label-in {
+  animation: label-in ease-in-out both;
+}
+
+.animate-label-out-reverse {
+  animation: label-out-reverse ease-in-out both;
+}
+
+.animate-label-in-reverse {
+  animation: label-in-reverse ease-in-out both;
+}
+
+@keyframes marquee-continuous {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.animate-marquee-continuous {
+  animation: marquee-continuous linear infinite;
+}
+
+@keyframes crate-enter {
+  from { opacity: 0; transform: translateX(-32px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.animate-crate-enter {
+  animation: crate-enter 500ms ease-out both;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fade-in ease-in-out both;
+}
+
+@keyframes slide-out-right {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+
+.animate-slide-out-right {
+  animation: slide-out-right ease-in both;
+}
