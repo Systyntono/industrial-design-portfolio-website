@@ -14,9 +14,9 @@ export default function Navbar() {
       </Link>
       <div className="flex gap-6">
   <Link href="/?view=grid">Work</Link>
-  <Link href="/about">About</Link>
-  <Link href="/resume">Resume</Link>
-  <Link href="/contact">Contact</Link>
+  <Link href="/?view=about">About</Link>
+  <Link href="/?view=resume">Resume</Link>
+  <Link href="/?view=contact">Contact</Link>
 </div>
     </nav>
   );

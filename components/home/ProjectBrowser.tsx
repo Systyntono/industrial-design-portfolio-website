@@ -36,16 +36,31 @@ export default function ProjectBrowser() {
     setYear((prev) => (prev.includes(y) ? prev.filter((v) => v !== y) : [...prev, y]));
 
   // In vertical mode the title band occupies a column on the left, so
-  // gallery content starts GAP past it. In horizontal mode that column is
-  // free again, so fall back to the same left inset SiteNav uses.
-  const contentLeft =
-    layout.mode === "vertical" ? layout.left + layout.width + GAP : undefined;
+  // gallery content starts GAP past it. In horizontal mode there's no band
+  // column, but DJ controls are still fixed at that same left edge — on a
+  // short viewport (why horizontal mode triggered in the first place) their
+  // bottom-anchored column can reach high enough to sit level with this
+  // page's own top content, so it still needs the same left clearance.
+  // layout.left in horizontal mode is already computed as "past the
+  // controls", so it doubles as the correct inset here with no extra math.
+  const contentLeft = layout.mode === "vertical" ? layout.left + layout.width + GAP : layout.left;
 
   return (
     <div
       className="min-h-full pl-8 md:pl-16 pr-8 md:pr-16 pt-32 pb-16 bg-black"
       style={{ paddingLeft: contentLeft }}
     >
+      {/* Horizontal mode means there wasn't room to run PageTitleBand as a
+          fixed vertical column (e.g. a landscape phone) — PageTitleBand
+          steps aside in that case since a fixed mid-screen band would
+          collide with this page's own scrolling content, so the title is
+          shown here instead, in-flow, where it just scrolls normally. */}
+      {layout.mode === "horizontal" && (
+        <p className="mb-12 text-3xl font-light tracking-widest text-white/90 uppercase">
+          More Projects
+        </p>
+      )}
+
       <div className="flex flex-col lg:flex-row gap-12 min-w-0">
         <aside className="lg:w-56 flex-shrink-0 flex flex-col gap-6">
           <input

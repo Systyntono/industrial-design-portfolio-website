@@ -16,6 +16,7 @@ type RecordCrateProps = {
 const PEEK_RATIO = 0.22; // fraction of a cover's height left visible as a peek in the resting stack
 const LANE_GAP = 96; // px between the resting stack and the pulled-out lane
 const COLLAPSE_WIDTH = 1280; // below this, results form a vertical list in place instead of a side lane
+const STACK_DESCRIPTION_WIDTH = 768; // below this there isn't room for a 40%-wide side column of text, so the description drops below the cover instead
 const LIST_GAP = 40; // px between rows in the collapsed results list
 const LIST_TOP_OFFSET = 36; // px reserved above the collapsed results list for its label
 
@@ -34,10 +35,16 @@ export default function RecordCrate({
   const [hovered, setHovered] = useState<number | null>(null);
   const [coverSize, setCoverSize] = useState({ width: 300, height: 270 });
   const [collapsed, setCollapsed] = useState(false);
+  const [stackedDescription, setStackedDescription] = useState(false);
   const firstCoverRef = useRef<HTMLAnchorElement>(null);
+  const descriptionRef = useRef<HTMLDivElement>(null);
+  const [descriptionHeight, setDescriptionHeight] = useState(0);
 
   useEffect(() => {
-    const check = () => setCollapsed(window.innerWidth < COLLAPSE_WIDTH);
+    const check = () => {
+      setCollapsed(window.innerWidth < COLLAPSE_WIDTH);
+      setStackedDescription(window.innerWidth < STACK_DESCRIPTION_WIDTH);
+    };
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
@@ -45,10 +52,15 @@ export default function RecordCrate({
 
   // Below xl the passed coverWidthClass (built for wide-screen proportions)
   // falls through to full width, leaving no room beside it for the side
-  // description — use a fixed 3/5 in collapsed mode instead. Same width in
-  // both collapsed states so toggling a filter never resizes the covers,
-  // only moves them.
-  const effectiveCoverWidthClass = collapsed ? "w-3/5" : coverWidthClass;
+  // description — use a fixed 3/5 in collapsed mode instead, unless the
+  // description has already dropped below the cover, in which case the
+  // cover itself can take the full width. Same width across filter toggles
+  // so covers never resize, only move.
+  const effectiveCoverWidthClass = collapsed
+    ? stackedDescription
+      ? "w-full"
+      : "w-3/5"
+    : coverWidthClass;
 
   // Cover size is responsive, so measure it live and derive every spacing
   // value from it rather than hardcoding pixels.
@@ -67,10 +79,31 @@ export default function RecordCrate({
     return () => observer.disconnect();
   }, [effectiveCoverWidthClass]);
 
+  // Same live-measurement approach for the description block, since it only
+  // adds to a row's height when it's stacked below the cover (side-by-side
+  // descriptions don't affect row height). Measured off the first item, same
+  // as the cover — every row is assumed uniform, matching how peek/overlap
+  // already treat coverHeight as constant across items.
+  useLayoutEffect(() => {
+    if (!stackedDescription) return;
+    const el = descriptionRef.current;
+    if (!el) return;
+
+    const measure = () => setDescriptionHeight(el.getBoundingClientRect().height);
+    measure();
+
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [stackedDescription]);
+
   const { width: coverWidth, height: coverHeight } = coverSize;
   const peek = coverHeight * PEEK_RATIO;
   const overlap = coverHeight - peek;
-  const listSpacing = coverHeight + LIST_GAP;
+  // Constant regardless of filter state, so toggling a filter never resizes
+  // the gap between rows — only stackedDescription (a layout breakpoint)
+  // changes how much room each row needs.
+  const listSpacing = coverHeight + (stackedDescription ? descriptionHeight : 0) + LIST_GAP;
   // Pulled-out records are fully separated (no overlap) in both the wide
   // side lane and the collapsed list — listSpacing covers both cases.
   const pulledSpacing = listSpacing;
@@ -81,16 +114,21 @@ export default function RecordCrate({
   // Rank of each project within the pulled-out subset, in original order —
   // computed once per render rather than inline, since the hover-pop below
   // needs to look up the HOVERED item's rank too, not just the current one.
+  // On mobile (collapsed) with no filter active, every project counts as
+  // "pulled out" so browsing always renders as a spaced list — the resting
+  // peek/overlap stack depends on hover to browse, which touch screens
+  // don't have, so it's desktop/pointer-only.
   const pulledRanks = useMemo(() => {
     let rank = -1;
     return projects.map((p) => {
-      if (pullActive && pulledOutSlugs.has(p.slug)) {
+      const inList = pullActive ? pulledOutSlugs.has(p.slug) : collapsed;
+      if (inList) {
         rank += 1;
         return rank;
       }
       return null;
     });
-  }, [projects, pulledOutSlugs, pullActive]);
+  }, [projects, pulledOutSlugs, pullActive, collapsed]);
   const pulledCount = pulledRanks.filter((r) => r !== null).length;
 
   const hoveredIsPulledOut = hovered !== null ? pulledRanks[hovered] !== null : false;
@@ -98,14 +136,14 @@ export default function RecordCrate({
   // Transforms don't contribute layout height, so when the pulled-out lane
   // (now fully separated, not overlapping) is taller than the underlying
   // peek stack, reserve the space explicitly or the page would cut it off.
-  const pulledLaneHeight = pulledCount * pulledSpacing + (collapsedList ? LIST_TOP_OFFSET : 0);
+  // pulledCount is only ever >0 when items are actually in list formation
+  // (filtered matches, or the always-listed mobile browsing case), so this
+  // condition doesn't need to separately check pullActive/collapsed.
+  const pulledLaneHeight = pulledCount * pulledSpacing + (collapsed ? LIST_TOP_OFFSET : 0);
 
   return (
-    <div
-      className="relative"
-      style={pullActive && pulledCount > 0 ? { minHeight: pulledLaneHeight } : undefined}
-    >
-      {collapsedList && (
+    <div className="relative" style={pulledCount > 0 ? { minHeight: pulledLaneHeight } : undefined}>
+      {collapsed && (
         <p className="absolute top-0 text-xs uppercase tracking-widest text-white/50">
           Results
         </p>
@@ -145,10 +183,12 @@ export default function RecordCrate({
           hoverNudge = i < (hovered as number) ? -overlap : overlap;
         }
 
-        // Collapsed side description: hover-revealed while browsing, pinned
-        // visible for matched records while filtering.
-        const showSideDescription =
-          collapsed && (collapsedList ? isPulledOut : isHovered);
+        // Collapsed description: visible for every item currently in list
+        // formation — every item when browsing unfiltered (isPulledOut is
+        // true for all of them in that case), or just the matches while
+        // filtering. listSpacing already reserves room for it unconditionally,
+        // so this never re-introduces the text/row overlap.
+        const showSideDescription = collapsed && isPulledOut;
 
         return (
           <div
@@ -184,20 +224,32 @@ export default function RecordCrate({
               <Image src={p.image} alt={p.title} fill className="object-cover" />
             </Link>
 
-            {/* Side description for collapsed mode. Absolutely positioned so
-                it never occupies layout space — even at opacity 0, an
-                in-flow element here would throw off every subsequent item's
-                marginTop-based cascade position. left-[60%] starts the text
-                right after the w-3/5 cover, and right-0 bounds it at the
-                wrapper's own edge — the wrapper spans the full column, so
-                left-full would place this at 100% of the COLUMN (fully
-                off-screen), not at the cover's edge. */}
+            {/* Description for collapsed mode. Absolutely positioned so it
+                never occupies layout space — even at opacity 0, an in-flow
+                element here would throw off every subsequent item's
+                marginTop-based cascade position. Below STACK_DESCRIPTION_WIDTH
+                there's no room for a 40%-wide side column without wrapped
+                text overflowing into the row below, so it drops beneath the
+                (now full-width) cover instead — listSpacing already reserves
+                the extra height for this via descriptionHeight. Otherwise,
+                left-[60%] starts the text right after the w-3/5 cover, and
+                right-0 bounds it at the wrapper's own edge — the wrapper
+                spans the full column, so left-full would place this at 100%
+                of the COLUMN (fully off-screen), not at the cover's edge. */}
             {collapsed && (
               <div
-                className="absolute top-0 left-[60%] right-0 pl-4 transition-all duration-500 ease-out pointer-events-none"
+                ref={i === 0 ? descriptionRef : undefined}
+                className={`absolute transition-all duration-500 ease-out pointer-events-none ${
+                  stackedDescription ? "left-0 right-0 pt-3" : "left-[60%] right-0 pl-4"
+                }`}
                 style={{
+                  top: stackedDescription ? coverHeight : 0,
                   opacity: showSideDescription ? 1 : 0,
-                  transform: showSideDescription ? "translateX(0)" : "translateX(-8px)",
+                  transform: showSideDescription
+                    ? "translate(0, 0)"
+                    : stackedDescription
+                      ? "translateY(-8px)"
+                      : "translateX(-8px)",
                 }}
               >
                 <p className="font-medium text-white">{p.title}</p>

@@ -24,16 +24,13 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         {/* TEMPORARY debug tool — on-screen console for mobile testing
-            (iOS Safari, no Mac available for remote inspection). Only
-            loads in development. Remove once the mobile issue is diagnosed. */}
-        {process.env.NODE_ENV === "development" && (
-          <>
-            <Script src="https://cdn.jsdelivr.net/npm/eruda" strategy="beforeInteractive" />
-            <Script id="eruda-init" strategy="beforeInteractive">
-              {`if (typeof eruda !== "undefined") { eruda.init(); }`}
-            </Script>
-          </>
-        )}
+            (iOS Safari, no Mac available for remote inspection). Loads on
+            every build (dev + production) while we chase the dev-vs-prod
+            mobile behavior mismatch. Remove once resolved. */}
+        <Script src="https://cdn.jsdelivr.net/npm/eruda" strategy="beforeInteractive" />
+        <Script id="eruda-init" strategy="beforeInteractive">
+          {`if (typeof eruda !== "undefined") { eruda.init(); }`}
+        </Script>
         <Navbar />
         {children}
         <Footer />
