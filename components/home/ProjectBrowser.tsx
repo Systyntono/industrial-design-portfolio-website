@@ -46,7 +46,7 @@ export default function ProjectBrowser() {
       className="min-h-full pl-8 md:pl-16 pr-8 md:pr-16 pt-32 pb-16 bg-black"
       style={{ paddingLeft: contentLeft }}
     >
-      <div className="flex flex-col lg:flex-row gap-12">
+      <div className="flex flex-col lg:flex-row gap-12 min-w-0">
         <aside className="lg:w-56 flex-shrink-0 flex flex-col gap-6">
           <input
             type="text"
@@ -95,8 +95,8 @@ export default function ProjectBrowser() {
           </div>
         </aside>
 
-        <div className="flex-1 flex flex-col xl:flex-row gap-12">
-          <div className="xl:basis-3/4">
+        <div className="flex-1 min-w-0 flex flex-col xl:flex-row gap-12">
+          <div className="min-w-0 xl:basis-3/4">
             <RecordCrate
               projects={projects}
               pulledOutSlugs={matchedSlugs}
@@ -109,7 +109,7 @@ export default function ProjectBrowser() {
             )}
           </div>
 
-          <div className="hidden xl:block xl:basis-1/4 pt-8">
+          <div className="hidden xl:block min-w-0 xl:basis-1/4 pt-8">
             {hoveredProject ? (
               <>
                 <p className="text-xl font-medium text-white">{hoveredProject.title}</p>

@@ -14,13 +14,16 @@ type RecordCrateProps = {
 };
 
 const PEEK_RATIO = 0.22; // fraction of a cover's height left visible as a peek in the resting stack
-const PULLED_RATIO = 0.55; // roomier spacing once pulled out, so they read as a clean list
-const LANE_GAP = 56; // px between the resting stack and the pulled-out lane
-const COLLAPSE_WIDTH = 1280; // below this, stack pulled-out records above instead of beside
+const LANE_GAP = 96; // px between the resting stack and the pulled-out lane
+const COLLAPSE_WIDTH = 1280; // below this, results form a vertical list in place instead of a side lane
+const LIST_GAP = 40; // px between rows in the collapsed results list
+const LIST_TOP_OFFSET = 36; // px reserved above the collapsed results list for its label
 
 // Every project stays mounted at all times, keyed by slug — pulling one out
-// (or letting it settle back) is purely a transform change on the SAME
-// element, which is what makes it slide rather than pop in/out.
+// (or letting it settle back) is purely a transform/opacity change on the
+// SAME element, which is what makes it slide rather than pop in/out. This
+// holds for the collapsed results list too: matched records glide from their
+// stack position up into list formation while non-matches fade in place.
 export default function RecordCrate({
   projects,
   pulledOutSlugs = new Set(),
@@ -40,8 +43,15 @@ export default function RecordCrate({
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // Cover size is responsive (see coverWidthClass), so measure it live and
-  // derive every spacing value from it rather than hardcoding pixels.
+  // Below xl the passed coverWidthClass (built for wide-screen proportions)
+  // falls through to full width, leaving no room beside it for the side
+  // description — use a fixed 3/5 in collapsed mode instead. Same width in
+  // both collapsed states so toggling a filter never resizes the covers,
+  // only moves them.
+  const effectiveCoverWidthClass = collapsed ? "w-3/5" : coverWidthClass;
+
+  // Cover size is responsive, so measure it live and derive every spacing
+  // value from it rather than hardcoding pixels.
   useLayoutEffect(() => {
     const el = firstCoverRef.current;
     if (!el) return;
@@ -55,13 +65,18 @@ export default function RecordCrate({
     const observer = new ResizeObserver(measure);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [coverWidthClass]);
+  }, [effectiveCoverWidthClass]);
 
   const { width: coverWidth, height: coverHeight } = coverSize;
   const peek = coverHeight * PEEK_RATIO;
   const overlap = coverHeight - peek;
-  const pulledSpacing = coverHeight * PULLED_RATIO;
+  const listSpacing = coverHeight + LIST_GAP;
+  // Pulled-out records are fully separated (no overlap) in both the wide
+  // side lane and the collapsed list — listSpacing covers both cases.
+  const pulledSpacing = listSpacing;
   const pullX = coverWidth + LANE_GAP;
+
+  const collapsedList = collapsed && pullActive;
 
   // Rank of each project within the pulled-out subset, in original order —
   // computed once per render rather than inline, since the hover-pop below
@@ -79,46 +94,41 @@ export default function RecordCrate({
   const pulledCount = pulledRanks.filter((r) => r !== null).length;
 
   const hoveredIsPulledOut = hovered !== null ? pulledRanks[hovered] !== null : false;
-  const showLaneLabels = pullActive && collapsed && pulledCount > 0;
+
+  // Transforms don't contribute layout height, so when the pulled-out lane
+  // (now fully separated, not overlapping) is taller than the underlying
+  // peek stack, reserve the space explicitly or the page would cut it off.
+  const pulledLaneHeight = pulledCount * pulledSpacing + (collapsedList ? LIST_TOP_OFFSET : 0);
 
   return (
     <div
       className="relative"
-      style={
-        pullActive && collapsed
-          ? { marginTop: pulledCount * pulledSpacing + LANE_GAP }
-          : undefined
-      }
+      style={pullActive && pulledCount > 0 ? { minHeight: pulledLaneHeight } : undefined}
     >
-      {showLaneLabels && (
-        <>
-          <p
-            className="absolute text-xs uppercase tracking-widest text-white/50"
-            style={{ top: -(pulledCount * pulledSpacing + LANE_GAP) - 28 }}
-          >
-            Results
-          </p>
-          <p className="absolute text-xs uppercase tracking-widest text-white/50" style={{ top: -28 }}>
-            Gallery
-          </p>
-        </>
+      {collapsedList && (
+        <p className="absolute top-0 text-xs uppercase tracking-widest text-white/50">
+          Results
+        </p>
       )}
+
       {projects.map((p, i) => {
         const pulledRank = pulledRanks[i];
         const isPulledOut = pulledRank !== null;
+        const hiddenByFilter = collapsedList && !isPulledOut;
 
         // mainY is this item's resting position in the main stack; targetY
         // is where it should actually end up. The transform only needs to
         // express the delta between the two, so the same element slides
-        // smoothly between "resting" and "pulled out" instead of teleporting.
+        // smoothly between "resting" and its filtered position instead of
+        // teleporting.
         const mainY = i * peek;
         let targetY = mainY;
         let deltaX = 0;
         if (isPulledOut) {
           if (collapsed) {
-            // Narrow layout: pulled-out records stack ABOVE the library,
-            // in their own compact column, rather than sliding sideways.
-            targetY = (pulledRank - pulledCount) * pulledSpacing - LANE_GAP;
+            // Collapsed: matched records glide into a plain vertical list
+            // at the top of the column; non-matches fade out in place.
+            targetY = LIST_TOP_OFFSET + pulledRank * listSpacing;
           } else {
             targetY = pulledRank * pulledSpacing;
             deltaX = pullX;
@@ -127,21 +137,24 @@ export default function RecordCrate({
         const deltaY = targetY - mainY;
 
         const isHovered = i === hovered;
-        const sameLane = hovered !== null && hoveredIsPulledOut === isPulledOut;
+        // Pulled-out records are fully separated now (no overlap in either
+        // mode), so the clear-a-path nudge only applies within the resting
+        // stack, where items still overlap each other.
         let hoverNudge = 0;
-        if (sameLane && !isHovered) {
-          if (isPulledOut) {
-            const hoveredRank = pulledRanks[hovered as number] as number;
-            hoverNudge = (pulledRank as number) < hoveredRank ? -overlap : overlap;
-          } else {
-            hoverNudge = i < (hovered as number) ? -overlap : overlap;
-          }
+        if (!isPulledOut && hovered !== null && !hoveredIsPulledOut && !isHovered) {
+          hoverNudge = i < (hovered as number) ? -overlap : overlap;
         }
+
+        // Collapsed side description: hover-revealed while browsing, pinned
+        // visible for matched records while filtering.
+        const showSideDescription =
+          collapsed && (collapsedList ? isPulledOut : isHovered);
 
         return (
           <div
             key={p.slug}
             onMouseEnter={() => {
+              if (hiddenByFilter) return;
               setHovered(i);
               onHoverChange?.(p);
             }}
@@ -156,28 +169,35 @@ export default function RecordCrate({
               marginTop: i === 0 ? 0 : -overlap,
               transform: `translate(${deltaX}px, ${deltaY + hoverNudge}px)`,
               zIndex: isPulledOut ? 60 + (pulledRank as number) : isHovered ? projects.length + 10 : i,
+              pointerEvents: hiddenByFilter ? "none" : undefined,
             }}
           >
             <Link
               href={`/work/${p.slug}`}
               ref={i === 0 ? firstCoverRef : undefined}
-              className={`relative block ${coverWidthClass} aspect-4/3 overflow-hidden rounded-md bg-zinc-900 shadow-xl shadow-black/60 transition-all duration-300 ease-out`}
+              className={`relative block ${effectiveCoverWidthClass} aspect-square overflow-hidden rounded-md bg-zinc-900 shadow-xl shadow-black/60 transition-all duration-500 ease-out`}
               style={{
                 transform: isHovered ? "scale(1.03)" : "scale(1)",
-                opacity: pullActive && !isPulledOut ? 0.35 : 1,
+                opacity: hiddenByFilter ? 0 : pullActive && !isPulledOut ? 0.35 : 1,
               }}
             >
               <Image src={p.image} alt={p.title} fill className="object-cover" />
             </Link>
 
-            {/* Collapsed layout has no room for a separate description
-                column, so it attaches directly under the hovered cover. */}
+            {/* Side description for collapsed mode. Absolutely positioned so
+                it never occupies layout space — even at opacity 0, an
+                in-flow element here would throw off every subsequent item's
+                marginTop-based cascade position. left-[60%] starts the text
+                right after the w-3/5 cover, and right-0 bounds it at the
+                wrapper's own edge — the wrapper spans the full column, so
+                left-full would place this at 100% of the COLUMN (fully
+                off-screen), not at the cover's edge. */}
             {collapsed && (
               <div
-                className="mt-4 mb-6 max-w-xs transition-all duration-300 ease-out"
+                className="absolute top-0 left-[60%] right-0 pl-4 transition-all duration-500 ease-out pointer-events-none"
                 style={{
-                  opacity: isHovered ? 1 : 0,
-                  transform: isHovered ? "translateY(0)" : "translateY(-8px)",
+                  opacity: showSideDescription ? 1 : 0,
+                  transform: showSideDescription ? "translateX(0)" : "translateX(-8px)",
                 }}
               >
                 <p className="font-medium text-white">{p.title}</p>
