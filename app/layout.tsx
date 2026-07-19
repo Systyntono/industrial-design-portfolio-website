@@ -15,6 +15,11 @@ export const metadata: Metadata = {
   description: "Industrial design portfolio and case studies.",
 };
 
+// TEMPORARY debug tool — on-screen console for mobile testing (iOS Safari,
+// no Mac available for remote inspection). Currently switched off; flip to
+// true to bring the floating console back on every build (dev + prod).
+const SHOW_DEBUG_CONSOLE = false;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -23,14 +28,14 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
-        {/* TEMPORARY debug tool — on-screen console for mobile testing
-            (iOS Safari, no Mac available for remote inspection). Loads on
-            every build (dev + production) while we chase the dev-vs-prod
-            mobile behavior mismatch. Remove once resolved. */}
-        <Script src="https://cdn.jsdelivr.net/npm/eruda" strategy="beforeInteractive" />
-        <Script id="eruda-init" strategy="beforeInteractive">
-          {`if (typeof eruda !== "undefined") { eruda.init(); }`}
-        </Script>
+        {SHOW_DEBUG_CONSOLE && (
+          <>
+            <Script src="https://cdn.jsdelivr.net/npm/eruda" strategy="beforeInteractive" />
+            <Script id="eruda-init" strategy="beforeInteractive">
+              {`if (typeof eruda !== "undefined") { eruda.init(); }`}
+            </Script>
+          </>
+        )}
         <Navbar />
         {children}
         <Footer />

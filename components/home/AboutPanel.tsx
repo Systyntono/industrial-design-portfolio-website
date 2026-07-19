@@ -23,18 +23,14 @@ export default function AboutPanel() {
       className="min-h-full pl-8 md:pl-16 pr-8 md:pr-16 pt-32 pb-24 bg-black"
       style={{ paddingLeft: contentLeft }}
     >
-      {/* Horizontal mode means there wasn't room to run PageTitleBand as a
-          fixed vertical column (e.g. a landscape phone) — PageTitleBand
-          steps aside in that case since a fixed mid-screen band would
-          collide with this page's own scrolling content, so the title is
-          shown here instead, in-flow, where it just scrolls normally. */}
-      {layout.mode === "horizontal" && (
-        <p className="mb-12 text-3xl font-light tracking-widest text-white/90 uppercase">
-          About
-        </p>
-      )}
-
       <div className="max-w-3xl">
+        {/* Always-on page heading — doubles as the horizontal-mode fallback
+            for PageTitleBand (which steps aside on short viewports where a
+            fixed mid-screen band would collide with scrolling content). */}
+        <h1 className="text-4xl md:text-6xl font-light tracking-tight text-white mb-16">
+          About
+        </h1>
+
         <div className="flex flex-col gap-6 text-lg text-zinc-400 leading-relaxed">
           <p>
             I&apos;m an industrial designer focused on human-centered products and design for

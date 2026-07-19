@@ -62,7 +62,13 @@ export default function ProjectBrowser() {
       )}
 
       <div className="flex flex-col lg:flex-row gap-12 min-w-0">
-        <aside className="lg:w-56 flex-shrink-0 flex flex-col gap-6">
+        {/* Sticky within Hero's overflow-y-auto section (the scroll
+            container), so search/filters hold the same top-32 offset the
+            page content starts at, at any scroll position. self-start is
+            load-bearing: flex items stretch to the row's full height by
+            default, and a full-height item has no room left to "stick".
+            lg: only — in the stacked mobile layout it scrolls normally. */}
+        <aside className="lg:w-56 flex-shrink-0 flex flex-col gap-6 lg:sticky lg:top-32 lg:self-start">
           <input
             type="text"
             placeholder="Search projects..."
@@ -124,7 +130,9 @@ export default function ProjectBrowser() {
             )}
           </div>
 
-          <div className="hidden xl:block min-w-0 xl:basis-1/4 pt-8">
+          {/* Same sticky treatment as the filters aside — pinned at the
+              page's top-32 content line while the crate scrolls. */}
+          <div className="hidden xl:block min-w-0 xl:basis-1/4 pt-8 xl:sticky xl:top-32 xl:self-start">
             {hoveredProject ? (
               <>
                 <p className="text-xl font-medium text-white">{hoveredProject.title}</p>

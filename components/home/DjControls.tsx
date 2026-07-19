@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 
 type DjControlsProps = {
@@ -17,6 +17,84 @@ type DjControlsProps = {
 
 const SHORT_VIEWPORT_QUERY = "(max-height: 600px)";
 
+const BTN_DIR = "/images/nav buttons";
+const FRAME_MS = 70;
+
+// The big buttons are 4-frame Illustrator exports: 1 = on, 2 = pressed
+// (still on), 3 = pressed (off), 4 = off. Turning off steps 1→2→3→4 and
+// turning on plays the same frames in reverse (4→3→2→1), per the design's
+// intended press-through motion. Only the two intermediate pressed frames
+// need scheduling — the endpoints are just the resting state on either side.
+// Hover (or holding) shows the pressed variant of the current state.
+function useStagedFrame(isOn: boolean, hovered: boolean): number {
+  const [animFrame, setAnimFrame] = useState<number | null>(null);
+  const prevOn = useRef(isOn);
+
+  useEffect(() => {
+    if (prevOn.current === isOn) return;
+    prevOn.current = isOn;
+    const seq = isOn ? [3, 2] : [2, 3];
+    const ids = seq.map((f, i) => window.setTimeout(() => setAnimFrame(f), FRAME_MS * i));
+    ids.push(window.setTimeout(() => setAnimFrame(null), FRAME_MS * seq.length));
+    return () => ids.forEach(clearTimeout);
+  }, [isOn]);
+
+  if (animFrame !== null) return animFrame;
+  if (hovered) return isOn ? 2 : 3;
+  return isOn ? 1 : 4;
+}
+
+// All frames stay mounted, stacked, with only the current one visible — a
+// bare src swap would flash blank the first time each frame loads.
+function StagedImage({ base, frames, frame }: { base: string; frames: number[]; frame: number }) {
+  return (
+    <span className="relative block h-full w-full">
+      {frames.map((f) => (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          key={f}
+          src={`${BTN_DIR}/${base}-${f}.png`}
+          alt=""
+          draggable={false}
+          className={`absolute inset-0 h-full w-full object-contain ${
+            f === frame ? "" : "invisible"
+          }`}
+        />
+      ))}
+    </span>
+  );
+}
+
+// Small skip buttons: frame 1 resting, frame 2 pressed/hovered.
+function SkipButton({
+  base,
+  label,
+  onClick,
+  disabled,
+}: {
+  base: string;
+  label: string;
+  onClick: () => void;
+  disabled: boolean;
+}) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <button
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
+      aria-label={label}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className={`h-9 w-9 [@media(max-height:600px)]:h-7 [@media(max-height:600px)]:w-7 aspect-square ${
+        disabled ? "opacity-40 cursor-not-allowed" : ""
+      }`}
+    >
+      <StagedImage base={base} frames={[1, 2]} frame={hovered && !disabled ? 2 : 1} />
+    </button>
+  );
+}
+
 export default function DjControls({
   isPlaying,
   onTogglePlay,
@@ -24,11 +102,17 @@ export default function DjControls({
   onPrev,
   openHref,
   disabled = false,
-  invert = false,
   prevDisabled = false,
   nextDisabled = false,
 }: DjControlsProps) {
-  const fill = invert ? "bg-white text-black" : "bg-black text-white";
+  const [openHovered, setOpenHovered] = useState(false);
+  const [ppHovered, setPpHovered] = useState(false);
+
+  // Open reads as "on" whenever it's clickable; play/pause as "on" while
+  // actually playing. Disabled instances (the panel stages) rest at the
+  // off frame with no hover response.
+  const openFrame = useStagedFrame(!disabled, openHovered && !disabled);
+  const ppFrame = useStagedFrame(isPlaying && !disabled, ppHovered && !disabled);
 
   // In the compact short-viewport layout, the "Tyson Jiang" logo sits
   // directly above this column — matching its rendered width here keeps the
@@ -87,42 +171,36 @@ export default function DjControls({
       style={isShortViewport && logoWidth ? { width: logoWidth } : undefined}
     >
       <div className="flex justify-between gap-2 w-20 [@media(max-height:600px)]:w-14">
-        <button
-          onClick={prevDisabled ? undefined : onPrev}
+        <SkipButton
+          base="button-backward"
+          label="Previous project"
+          onClick={onPrev}
           disabled={prevDisabled}
-          aria-label="Previous project"
-          className={`h-9 w-9 [@media(max-height:600px)]:h-7 [@media(max-height:600px)]:w-7 aspect-square rounded-full flex items-center justify-center ${fill} ${
-            prevDisabled ? "opacity-40 cursor-not-allowed" : ""
-          }`}
-        >
-          ⏮
-        </button>
-        <button
-          onClick={nextDisabled ? undefined : onNext}
+        />
+        <SkipButton
+          base="button-forward"
+          label="Next project"
+          onClick={onNext}
           disabled={nextDisabled}
-          aria-label="Next project"
-          className={`h-9 w-9 [@media(max-height:600px)]:h-7 [@media(max-height:600px)]:w-7 aspect-square rounded-full flex items-center justify-center ${fill} ${
-            nextDisabled ? "opacity-40 cursor-not-allowed" : ""
-          }`}
-        >
-          ⏭
-        </button>
+        />
       </div>
 
       {disabled ? (
         <span
           aria-disabled="true"
-          className={`h-20 w-20 [@media(max-height:600px)]:h-14 [@media(max-height:600px)]:w-14 rounded-full text-sm font-semibold tracking-wide flex items-center justify-center opacity-40 cursor-not-allowed ${fill}`}
+          className="h-20 w-20 [@media(max-height:600px)]:h-14 [@media(max-height:600px)]:w-14 cursor-not-allowed"
         >
-          Open
+          <StagedImage base="button-open" frames={[1, 2, 3, 4]} frame={openFrame} />
         </span>
       ) : (
         <Link
           href={openHref}
           aria-label="Open this project"
-          className={`h-20 w-20 [@media(max-height:600px)]:h-14 [@media(max-height:600px)]:w-14 rounded-full text-sm font-semibold tracking-wide flex items-center justify-center ${fill}`}
+          onMouseEnter={() => setOpenHovered(true)}
+          onMouseLeave={() => setOpenHovered(false)}
+          className="block h-20 w-20 [@media(max-height:600px)]:h-14 [@media(max-height:600px)]:w-14"
         >
-          Open
+          <StagedImage base="button-open" frames={[1, 2, 3, 4]} frame={openFrame} />
         </Link>
       )}
 
@@ -131,11 +209,13 @@ export default function DjControls({
         onClick={disabled ? undefined : onTogglePlay}
         disabled={disabled}
         aria-label={isPlaying ? "Pause rotation" : "Play rotation"}
-        className={`h-20 w-20 [@media(max-height:600px)]:h-14 [@media(max-height:600px)]:w-14 rounded-full flex items-center justify-center transition-shadow ${fill} ${
-          isPlaying ? "shadow-[0_0_0_4px_rgba(245,158,11,0.8)]" : ""
-        } ${disabled ? "opacity-40 cursor-not-allowed" : ""}`}
+        onMouseEnter={() => setPpHovered(true)}
+        onMouseLeave={() => setPpHovered(false)}
+        className={`h-20 w-20 [@media(max-height:600px)]:h-14 [@media(max-height:600px)]:w-14 ${
+          disabled ? "cursor-not-allowed" : ""
+        }`}
       >
-        {isPlaying ? "❚❚" : "▶"}
+        <StagedImage base="button-pp" frames={[1, 2, 3, 4]} frame={ppFrame} />
       </button>
     </div>
   );

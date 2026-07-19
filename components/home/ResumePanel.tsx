@@ -23,19 +23,12 @@ export default function ResumePanel() {
       className="min-h-full pl-8 md:pl-16 pr-8 md:pr-16 pt-32 pb-24 bg-black"
       style={{ paddingLeft: contentLeft }}
     >
-      {/* Horizontal mode means there wasn't room to run PageTitleBand as a
-          fixed vertical column (e.g. a landscape phone) — PageTitleBand
-          steps aside in that case since a fixed mid-screen band would
-          collide with this page's own scrolling content, so the title is
-          shown here instead, in-flow, where it just scrolls normally. */}
-      {layout.mode === "horizontal" && (
-        <p className="mb-12 text-3xl font-light tracking-widest text-white/90 uppercase">
-          Resume
-        </p>
-      )}
-
       <div className="max-w-3xl">
-        <div className="mb-16">
+        {/* Always-on page heading — doubles as the horizontal-mode fallback
+            for PageTitleBand (which steps aside on short viewports where a
+            fixed mid-screen band would collide with scrolling content). */}
+        <div className="flex flex-wrap items-center justify-between gap-6 mb-16">
+          <h1 className="text-4xl md:text-6xl font-light tracking-tight text-white">Resume</h1>
           <a
             href="/resume.pdf"
             download
