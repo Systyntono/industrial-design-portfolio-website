@@ -253,13 +253,16 @@ export default function RecordCrate({
                 }}
               >
                 <p className="font-medium text-white">{p.title}</p>
-                <p className="mt-1 text-sm text-zinc-400 leading-relaxed">
-                  Add a short project description here.
-                </p>
+                <p className="mt-1 text-sm text-zinc-400 leading-relaxed">{p.description}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <span className="px-2 py-0.5 rounded-full border border-white/30 text-xs text-white/70">
-                    {p.industry}
-                  </span>
+                  {p.industries.map((ind) => (
+                    <span
+                      key={ind}
+                      className="px-2 py-0.5 rounded-full border border-white/30 text-xs text-white/70"
+                    >
+                      {ind}
+                    </span>
+                  ))}
                   <span className="px-2 py-0.5 rounded-full border border-white/30 text-xs text-white/70">
                     {p.year}
                   </span>

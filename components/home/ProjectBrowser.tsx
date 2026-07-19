@@ -8,29 +8,44 @@ import { useBandLayout, GAP } from "./useBandLayout";
 export default function ProjectBrowser() {
   const [search, setSearch] = useState("");
   const [industry, setIndustry] = useState<string[]>([]);
+  const [tool, setTool] = useState<string[]>([]);
   const [year, setYear] = useState<number[]>([]);
   const [hoveredProject, setHoveredProject] = useState<Project | null>(null);
   const layout = useBandLayout();
 
-  const industries = useMemo(() => Array.from(new Set(projects.map((p) => p.industry))), []);
+  const industries = useMemo(
+    () => Array.from(new Set(projects.flatMap((p) => p.industries))),
+    []
+  );
+  // Tools/software/processes is the one filter category expected to grow
+  // long as more projects are added — same flex-wrap pill treatment as
+  // Industry, which already scales to any number of options by wrapping to
+  // more rows rather than needing a different widget.
+  const tools = useMemo(() => Array.from(new Set(projects.flatMap((p) => p.tools))), []);
   const years = useMemo(
     () => Array.from(new Set(projects.map((p) => p.year))).sort((a, b) => b - a),
     []
   );
 
-  const filtersActive = search.trim() !== "" || industry.length > 0 || year.length > 0;
+  const filtersActive =
+    search.trim() !== "" || industry.length > 0 || tool.length > 0 || year.length > 0;
 
   const matchedProjects = projects.filter((p) => {
     const matchesSearch = p.title.toLowerCase().includes(search.toLowerCase());
-    const matchesIndustry = industry.length === 0 || industry.includes(p.industry);
+    const matchesIndustry =
+      industry.length === 0 || industry.some((sel) => p.industries.includes(sel));
+    const matchesTool = tool.length === 0 || tool.some((sel) => p.tools.includes(sel));
     const matchesYear = year.length === 0 || year.includes(p.year);
-    return matchesSearch && matchesIndustry && matchesYear;
+    return matchesSearch && matchesIndustry && matchesTool && matchesYear;
   });
 
   const matchedSlugs = new Set(matchedProjects.map((p) => p.slug));
 
   const toggleIndustry = (ind: string) =>
     setIndustry((prev) => (prev.includes(ind) ? prev.filter((i) => i !== ind) : [...prev, ind]));
+
+  const toggleTool = (t: string) =>
+    setTool((prev) => (prev.includes(t) ? prev.filter((v) => v !== t) : [...prev, t]));
 
   const toggleYear = (y: number) =>
     setYear((prev) => (prev.includes(y) ? prev.filter((v) => v !== y) : [...prev, y]));
@@ -97,6 +112,25 @@ export default function ProjectBrowser() {
           </div>
 
           <div className="flex flex-col gap-2">
+            <p className="text-xs uppercase tracking-widest text-white/50">Tools &amp; Process</p>
+            <div className="flex flex-wrap gap-2">
+              {tools.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => toggleTool(t)}
+                  className={`px-3 py-1 rounded-full text-sm border ${
+                    tool.includes(t)
+                      ? "bg-white text-black border-white"
+                      : "border-white/30 text-white/70"
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
             <p className="text-xs uppercase tracking-widest text-white/50">Year</p>
             <div className="flex flex-wrap gap-2">
               {years.map((y) => (
@@ -137,12 +171,17 @@ export default function ProjectBrowser() {
               <>
                 <p className="text-xl font-medium text-white">{hoveredProject.title}</p>
                 <p className="mt-2 text-sm text-zinc-400 leading-relaxed">
-                  Add a short project description here.
+                  {hoveredProject.description}
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <span className="px-2 py-0.5 rounded-full border border-white/30 text-xs text-white/70">
-                    {hoveredProject.industry}
-                  </span>
+                  {hoveredProject.industries.map((ind) => (
+                    <span
+                      key={ind}
+                      className="px-2 py-0.5 rounded-full border border-white/30 text-xs text-white/70"
+                    >
+                      {ind}
+                    </span>
+                  ))}
                   <span className="px-2 py-0.5 rounded-full border border-white/30 text-xs text-white/70">
                     {hoveredProject.year}
                   </span>
