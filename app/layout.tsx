@@ -2,8 +2,6 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -36,9 +34,10 @@ export default function RootLayout({
             </Script>
           </>
         )}
-        <Navbar />
+        {/* Each page supplies its own header/footer — the gallery home page
+            has its fixed DJ chrome, project pages have ProjectHeader and
+            SiteFooter — so the layout stays out of their way. */}
         {children}
-        <Footer />
       </body>
     </html>
   );

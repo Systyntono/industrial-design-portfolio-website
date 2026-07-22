@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { Project } from "@/data/projects";
+import { TITLE_PX, SUBTITLE_PX, BODY_PX, TAG_PX } from "./typeScale";
 
 type RecordCrateProps = {
   projects: Project[];
@@ -252,18 +253,41 @@ export default function RecordCrate({
                       : "translateX(-8px)",
                 }}
               >
-                <p className="font-medium text-white">{p.title}</p>
-                <p className="mt-1 text-sm text-zinc-400 leading-relaxed">{p.description}</p>
+                <p className="font-medium text-white" style={{ fontSize: TITLE_PX }}>
+                  {p.title}
+                </p>
+                <p
+                  className="mt-1 font-semibold text-white/80"
+                  style={{ fontSize: SUBTITLE_PX }}
+                >
+                  {p.subtitle}
+                </p>
+                <p
+                  className="mt-1 text-zinc-400 leading-relaxed"
+                  style={{ fontSize: BODY_PX }}
+                >
+                  {p.description}
+                </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {p.industries.map((ind) => (
                     <span
                       key={ind}
-                      className="px-2 py-0.5 rounded-full border border-white/30 text-xs text-white/70"
+                      className="px-2 py-0.5 rounded-full border border-white/30 text-white/70"
+                      style={{ fontSize: TAG_PX }}
                     >
                       {ind}
                     </span>
                   ))}
-                  <span className="px-2 py-0.5 rounded-full border border-white/30 text-xs text-white/70">
+                  <span
+                    className="px-2 py-0.5 rounded-full border border-white/30 text-white/70"
+                    style={{ fontSize: TAG_PX }}
+                  >
+                    {p.team}
+                  </span>
+                  <span
+                    className="px-2 py-0.5 rounded-full border border-white/30 text-white/70"
+                    style={{ fontSize: TAG_PX }}
+                  >
                     {p.year}
                   </span>
                 </div>

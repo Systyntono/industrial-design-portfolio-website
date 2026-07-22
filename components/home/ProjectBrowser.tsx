@@ -4,11 +4,24 @@ import { useMemo, useState } from "react";
 import { projects, type Project } from "@/data/projects";
 import RecordCrate from "./RecordCrate";
 import { useBandLayout, GAP } from "./useBandLayout";
+import { TITLE_PX, SUBTITLE_PX, BODY_PX, TAG_PX } from "./typeScale";
+
+// Filter pill styling, shared by all four filter groups (Industry, Tools,
+// Team, Year) so the selected-state accent only has to be changed here.
+// The accent hex is written out in full rather than interpolated from a
+// variable — Tailwind scans source for complete class strings at build
+// time, so a computed `bg-[${x}]` would never generate any CSS.
+const PILL_BASE = "px-3 py-1 rounded-full text-sm border";
+const PILL_SELECTED = "bg-[#f5a313] text-black border-[#f5a313]";
+const PILL_IDLE = "border-white/30 text-white/70";
+const pillClass = (selected: boolean) =>
+  `${PILL_BASE} ${selected ? PILL_SELECTED : PILL_IDLE}`;
 
 export default function ProjectBrowser() {
   const [search, setSearch] = useState("");
   const [industry, setIndustry] = useState<string[]>([]);
   const [tool, setTool] = useState<string[]>([]);
+  const [team, setTeam] = useState<string[]>([]);
   const [year, setYear] = useState<number[]>([]);
   const [hoveredProject, setHoveredProject] = useState<Project | null>(null);
   const layout = useBandLayout();
@@ -22,21 +35,27 @@ export default function ProjectBrowser() {
   // Industry, which already scales to any number of options by wrapping to
   // more rows rather than needing a different widget.
   const tools = useMemo(() => Array.from(new Set(projects.flatMap((p) => p.tools))), []);
+  const teams = useMemo(() => Array.from(new Set(projects.map((p) => p.team))), []);
   const years = useMemo(
     () => Array.from(new Set(projects.map((p) => p.year))).sort((a, b) => b - a),
     []
   );
 
   const filtersActive =
-    search.trim() !== "" || industry.length > 0 || tool.length > 0 || year.length > 0;
+    search.trim() !== "" ||
+    industry.length > 0 ||
+    tool.length > 0 ||
+    team.length > 0 ||
+    year.length > 0;
 
   const matchedProjects = projects.filter((p) => {
     const matchesSearch = p.title.toLowerCase().includes(search.toLowerCase());
     const matchesIndustry =
       industry.length === 0 || industry.some((sel) => p.industries.includes(sel));
     const matchesTool = tool.length === 0 || tool.some((sel) => p.tools.includes(sel));
+    const matchesTeam = team.length === 0 || team.includes(p.team);
     const matchesYear = year.length === 0 || year.includes(p.year);
-    return matchesSearch && matchesIndustry && matchesTool && matchesYear;
+    return matchesSearch && matchesIndustry && matchesTool && matchesTeam && matchesYear;
   });
 
   const matchedSlugs = new Set(matchedProjects.map((p) => p.slug));
@@ -46,6 +65,9 @@ export default function ProjectBrowser() {
 
   const toggleTool = (t: string) =>
     setTool((prev) => (prev.includes(t) ? prev.filter((v) => v !== t) : [...prev, t]));
+
+  const toggleTeam = (t: string) =>
+    setTeam((prev) => (prev.includes(t) ? prev.filter((v) => v !== t) : [...prev, t]));
 
   const toggleYear = (y: number) =>
     setYear((prev) => (prev.includes(y) ? prev.filter((v) => v !== y) : [...prev, y]));
@@ -99,11 +121,7 @@ export default function ProjectBrowser() {
                 <button
                   key={ind}
                   onClick={() => toggleIndustry(ind)}
-                  className={`px-3 py-1 rounded-full text-sm border ${
-                    industry.includes(ind)
-                      ? "bg-white text-black border-white"
-                      : "border-white/30 text-white/70"
-                  }`}
+                  className={pillClass(industry.includes(ind))}
                 >
                   {ind}
                 </button>
@@ -118,11 +136,22 @@ export default function ProjectBrowser() {
                 <button
                   key={t}
                   onClick={() => toggleTool(t)}
-                  className={`px-3 py-1 rounded-full text-sm border ${
-                    tool.includes(t)
-                      ? "bg-white text-black border-white"
-                      : "border-white/30 text-white/70"
-                  }`}
+                  className={pillClass(tool.includes(t))}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <p className="text-xs uppercase tracking-widest text-white/50">Team</p>
+            <div className="flex flex-wrap gap-2">
+              {teams.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => toggleTeam(t)}
+                  className={pillClass(team.includes(t))}
                 >
                   {t}
                 </button>
@@ -137,11 +166,7 @@ export default function ProjectBrowser() {
                 <button
                   key={y}
                   onClick={() => toggleYear(y)}
-                  className={`px-3 py-1 rounded-full text-sm border ${
-                    year.includes(y)
-                      ? "bg-white text-black border-white"
-                      : "border-white/30 text-white/70"
-                  }`}
+                  className={pillClass(year.includes(y))}
                 >
                   {y}
                 </button>
@@ -169,20 +194,41 @@ export default function ProjectBrowser() {
           <div className="hidden xl:block min-w-0 xl:basis-1/4 pt-8 xl:sticky xl:top-32 xl:self-start">
             {hoveredProject ? (
               <>
-                <p className="text-xl font-medium text-white">{hoveredProject.title}</p>
-                <p className="mt-2 text-sm text-zinc-400 leading-relaxed">
+                <p className="font-medium text-white" style={{ fontSize: TITLE_PX }}>
+                  {hoveredProject.title}
+                </p>
+                <p
+                  className="mt-1 font-semibold text-white/80"
+                  style={{ fontSize: SUBTITLE_PX }}
+                >
+                  {hoveredProject.subtitle}
+                </p>
+                <p
+                  className="mt-2 text-zinc-400 leading-relaxed"
+                  style={{ fontSize: BODY_PX }}
+                >
                   {hoveredProject.description}
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {hoveredProject.industries.map((ind) => (
                     <span
                       key={ind}
-                      className="px-2 py-0.5 rounded-full border border-white/30 text-xs text-white/70"
+                      className="px-2 py-0.5 rounded-full border border-white/30 text-white/70"
+                      style={{ fontSize: TAG_PX }}
                     >
                       {ind}
                     </span>
                   ))}
-                  <span className="px-2 py-0.5 rounded-full border border-white/30 text-xs text-white/70">
+                  <span
+                    className="px-2 py-0.5 rounded-full border border-white/30 text-white/70"
+                    style={{ fontSize: TAG_PX }}
+                  >
+                    {hoveredProject.team}
+                  </span>
+                  <span
+                    className="px-2 py-0.5 rounded-full border border-white/30 text-white/70"
+                    style={{ fontSize: TAG_PX }}
+                  >
                     {hoveredProject.year}
                   </span>
                 </div>
