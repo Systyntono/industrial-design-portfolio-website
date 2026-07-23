@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Alternate build output (BUILD_DIR=.next-build npm run build)
+/.next-build/

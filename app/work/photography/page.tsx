@@ -5,13 +5,7 @@ import { DEFAULT_THEME } from "@/data/projectContent/types";
 import ProjectHeader from "@/components/project/ProjectHeader";
 import PhotoGallery from "@/components/project/PhotoGallery";
 import SiteFooter from "@/components/project/SiteFooter";
-import {
-  BODY_PX,
-  CONTENT_MAX_PX,
-  H1_PX,
-  LEAD_PX,
-  SECTION_GAP_PX,
-} from "@/components/project/projectScale";
+import { LAYOUT, SPACE, type as t } from "@/components/project/projectTokens";
 
 // A static segment, so it takes precedence over /work/[slug]. Photography is
 // a body of work rather than a case study, so it gets its own template
@@ -24,7 +18,7 @@ export const metadata: Metadata = {
 
 export default async function PhotographyPage() {
   const theme = { ...DEFAULT_THEME, ...(photography.theme ?? {}) };
-  const series = await getPhotoSeries(photography.targetRowHeight, CONTENT_MAX_PX);
+  const series = await getPhotoSeries(photography.targetRowHeight, LAYOUT.contentMax);
   const isEmpty = series.length === 0;
 
   return (
@@ -42,17 +36,17 @@ export default async function PhotographyPage() {
       className="min-h-screen"
     >
       <ProjectHeader title={photography.title} />
-      <div className="h-[72px]" />
+      <div style={{ height: "var(--pp-header-h)" }} />
 
       <article className="pt-16 md:pt-24">
-        <header className="mx-auto px-6 md:px-10" style={{ maxWidth: CONTENT_MAX_PX }}>
-          <h1 className="font-medium leading-[1.05] tracking-tight" style={{ fontSize: H1_PX }}>
+        <header className="mx-auto px-6 md:px-10" style={{ maxWidth: LAYOUT.contentMax }}>
+          <h1 className="font-medium leading-[1.05] tracking-tight" style={{ ...t.h1 }}>
             {photography.title}
           </h1>
           {photography.intro && (
             <p
               className="mt-6 leading-snug"
-              style={{ fontSize: LEAD_PX, color: "var(--pp-muted)", maxWidth: "52ch" }}
+              style={{ ...t.lead, color: "var(--pp-muted)", maxWidth: "52ch" }}
             >
               {photography.intro}
             </p>
@@ -61,15 +55,15 @@ export default async function PhotographyPage() {
 
         <div
           className="mx-auto px-6 md:px-10"
-          style={{ maxWidth: CONTENT_MAX_PX, marginTop: SECTION_GAP_PX }}
+          style={{ maxWidth: LAYOUT.contentMax, marginTop: SPACE.section }}
         >
           {isEmpty ? (
             <div
               className="rounded-sm border border-dashed px-6 py-20 text-center"
               style={{ borderColor: "var(--pp-rule)" }}
             >
-              <p style={{ fontSize: BODY_PX, color: "var(--pp-fg)" }}>No photos yet.</p>
-              <p className="mt-3" style={{ fontSize: BODY_PX, color: "var(--pp-muted)" }}>
+              <p style={{ ...t.body, color: "var(--pp-fg)" }}>No photos yet.</p>
+              <p className="mt-3" style={{ ...t.body, color: "var(--pp-muted)" }}>
                 Drop images into{" "}
                 <code className="font-mono">public{PHOTO_DIR}</code> — or into
                 subfolders there to group them into titled series.

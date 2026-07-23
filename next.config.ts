@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Lets a production build write somewhere other than .next, so you can
+  // run `npm run build` to check for errors while `npm run dev` is still
+  // running without the two clobbering each other's cache:
+  //   BUILD_DIR=.next-build npm run build
+  distDir: process.env.BUILD_DIR || ".next",
   // Lets the dev server (Turbopack HMR + dev-only assets) respond to
   // requests from this LAN IP, so phone testing over Wi-Fi works the same
   // as localhost. Dev-only — has no effect on production builds/deploys.

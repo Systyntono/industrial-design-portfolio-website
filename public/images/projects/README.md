@@ -5,10 +5,12 @@ in `data/projects.ts`.
 
 ```
 public/images/projects/
-  helmet-1/          <- slug "helmet-1"
+  helmet-1/            <- slug "helmet-1"
     hero.jpg
-    shell-detail.jpg
-    process-01.jpg
+    research-01.jpg
+    final-hero.jpg
+    awards/
+      red-dot.svg
   base24/
     ...
 ```
@@ -26,20 +28,44 @@ A path starting with `/` is used as-is, for the rare shared image.
 
 ## Photos you haven't taken yet
 
-Reference them anyway. A file that isn't there renders as a dashed
-placeholder box labelled with the filename, at the right size and in the
-right position — so you can build the whole page layout before the shoot and
-just drop files in later.
+Reference them anyway. A file that isn't there renders as a **coloured block**
+at the right size and position, labelled with the filename — so you can build
+the whole page layout first and drop files in later. Nothing to change when
+you do; just add the file.
+
+## Award logos
+
+Drop them in the project folder (an `awards/` subfolder works too) and list
+the filenames:
+
+```ts
+overview: {
+  awards: ["red-dot.svg", { src: "idsa.png", alt: "IDSA", href: "https://…" }],
+}
+```
+
+They're normalised to a common height, so logos of different sizes still line
+up. SVG or PNG with a transparent background works best.
+
+## Video
+
+Drop an `.mp4` in the folder and use a `feature` block:
+
+```ts
+{ type: "feature", video: "final.mp4" }
+```
 
 ## Cover images
 
-The card in the More Projects grid uses the `image` field in
-`data/projects.ts`. Hero-gallery projects point at `/images/hero/<slug>.jpg`;
-everything else points at `/images/projects/<slug>/cover.jpg`, so adding a
-`cover.jpg` to the folder is all it takes to light that card up.
+The card in the More Projects grid and the home page gallery uses the `image`
+field in `data/projects.ts`. Hero-gallery projects point at
+`/images/hero/<slug>.jpg`; everything else points at
+`/images/projects/<slug>/cover.jpg`, so adding a `cover.jpg` to the folder is
+all it takes to light that card up.
 
 ## A note on file size
 
-Photos are served through Next's image optimizer, so huge sources still
-*display* fine — but they slow every build and dev refresh. Exporting at
-around 2400px on the long edge is plenty for full-bleed web use.
+Photos are served through Next's image optimizer, so large sources still
+*display* fine — but they slow every build and dev refresh, and they live in
+git history forever. Exporting at around **2400px on the long edge** is plenty
+for full-bleed web use.

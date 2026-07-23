@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { heroSlides } from "@/data/heroSlides";
 import { projects } from "@/data/projects";
-import { BODY_PX, CAPTION_PX, H2_PX } from "./projectScale";
+import { LAYOUT, SPACE, type as t } from "./projectTokens";
 
 // The highlight reel from the home page gallery, minus whichever project the
 // reader is already on.
@@ -23,10 +23,11 @@ export default function MoreProjects({ currentSlug }: { currentSlug: string }) {
   if (items.length === 0) return null;
 
   return (
-    <section className="mx-auto mt-32 max-w-[1440px] px-6 md:px-10">
+    <section className="mx-auto w-full"
+      style={{ maxWidth: LAYOUT.contentMax, paddingLeft: SPACE.pagePad, paddingRight: SPACE.pagePad, marginTop: SPACE.section }}>
       <h2
         className="font-medium tracking-tight"
-        style={{ fontSize: H2_PX, color: "var(--pp-fg)" }}
+        style={{ ...t.h2, color: "var(--pp-fg)" }}
       >
         More Projects
       </h2>
@@ -46,12 +47,12 @@ export default function MoreProjects({ currentSlug }: { currentSlug: string }) {
               </div>
               <p
                 className="mt-4 font-medium tracking-tight"
-                style={{ fontSize: BODY_PX, color: "var(--pp-fg)" }}
+                style={{ ...t.h3, color: "var(--pp-fg)" }}
               >
                 {project?.title ?? slide.label}
               </p>
               {project?.subtitle && (
-                <p className="mt-1" style={{ fontSize: CAPTION_PX, color: "var(--pp-muted)" }}>
+                <p className="mt-1" style={{ ...t.caption, color: "var(--pp-muted)" }}>
                   {project.subtitle}
                 </p>
               )}

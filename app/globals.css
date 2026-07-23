@@ -122,3 +122,64 @@ body {
 .animate-slide-out-right {
   animation: slide-out-right ease-in both;
 }
+
+/* ── Project case study pages ──────────────────────────────────────────── */
+
+/* Header height, used by the fixed header, its spacer, and the hero's
+   height calculation. Smaller on phones so the hero gets more room. */
+:root {
+  --pp-header-h: 56px;
+}
+@media (min-width: 768px) {
+  :root {
+    --pp-header-h: 72px;
+  }
+}
+
+/* Hero fills exactly one screen, minus the header — never more.
+   The vh line is a fallback; svh wins where supported and accounts for
+   mobile browser toolbars. */
+.pp-hero {
+  height: calc(100vh - var(--pp-header-h));
+  height: calc(100svh - var(--pp-header-h));
+}
+
+/* Landscape phones are very short. Below this the hero would be a sliver,
+   so let it take the full screen and tuck the header over it instead. */
+@media (max-height: 480px) {
+  .pp-hero {
+    height: calc(100vh - var(--pp-header-h));
+    height: calc(100svh - var(--pp-header-h));
+    min-height: 260px;
+  }
+}
+
+@keyframes pp-nudge {
+  0%,
+  100% {
+    transform: translate(-50%, 0);
+  }
+  50% {
+    transform: translate(-50%, 6px);
+  }
+}
+
+.pp-arrow {
+  animation: pp-nudge 2.2s ease-in-out infinite;
+}
+
+/* Smooth scrolling for the hero arrow. */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Respect the OS "reduce motion" setting — required for accessibility, and
+   the arrow's bounce is exactly the kind of thing it's meant to stop. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .pp-arrow {
+    animation: none;
+  }
+}

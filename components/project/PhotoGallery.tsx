@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { rowAspectSum, type PhotoSeries } from "@/lib/photography";
-import { CAPTION_PX, H2_PX } from "./projectScale";
+import { SPACE, type as t } from "./projectTokens";
 
 const GAP_PX = 12;
 
@@ -21,12 +21,12 @@ export default function PhotoGallery({
             <header className="mb-8">
               <h2
                 className="font-medium tracking-tight"
-                style={{ fontSize: H2_PX, color: "var(--pp-fg)" }}
+                style={{ ...t.h2, color: "var(--pp-fg)" }}
               >
                 {set.title}
               </h2>
               {notes[set.key] && (
-                <p className="mt-2" style={{ fontSize: CAPTION_PX, color: "var(--pp-muted)" }}>
+                <p className="mt-2" style={{ ...t.caption, color: "var(--pp-muted)" }}>
                   {notes[set.key]}
                 </p>
               )}

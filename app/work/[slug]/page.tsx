@@ -3,22 +3,20 @@ import { notFound } from "next/navigation";
 import { projects } from "@/data/projects";
 import { getProjectContent } from "@/data/projectContent";
 import { DEFAULT_THEME } from "@/data/projectContent/types";
+import { resolveMedia } from "@/components/project/ProjectMedia";
 import BlockRenderer from "@/components/project/BlockRenderer";
 import ProjectHeader from "@/components/project/ProjectHeader";
+import ProjectHero from "@/components/project/ProjectHero";
+import ProjectOverview from "@/components/project/ProjectOverview";
 import MoreProjects from "@/components/project/MoreProjects";
 import SiteFooter from "@/components/project/SiteFooter";
-import {
-  BODY_PX,
-  CAPTION_PX,
-  CONTENT_MAX_PX,
-  H1_PX,
-  LEAD_PX,
-  SECTION_GAP_PX,
-} from "@/components/project/projectScale";
+import { SPACE } from "@/components/project/projectTokens";
 
 type Params = { params: Promise<{ slug: string }> };
 
-// Pre-renders every project at build time instead of on first request.
+const OVERVIEW_ID = "project-overview";
+
+// Pre-renders every project at build time rather than per request.
 export function generateStaticParams() {
   return projects.map((p) => ({ slug: p.slug }));
 }
@@ -44,7 +42,15 @@ export default async function ProjectPage({ params }: Params) {
   const title = content?.title ?? project.title;
   const subtitle = content?.subtitle ?? project.subtitle;
 
-  // No case study written yet — fall back to the summary already in
+  // Resolved on the server so the hero renders a colour block, with no
+  // flash of empty space, when the photo isn't uploaded yet.
+  const hero = await resolveMedia(slug, {
+    src: content?.hero?.src,
+    alt: content?.hero?.alt ?? title,
+    tone: content?.hero?.tone,
+  });
+
+  // No case study written yet — fall back to the summary from
   // data/projects.ts so the page is still worth landing on.
   const blocks = content?.blocks ?? [
     { type: "text" as const, body: project.description, lead: true },
@@ -52,8 +58,8 @@ export default async function ProjectPage({ params }: Params) {
 
   return (
     <div
-      // Theme travels as CSS variables so every child (including the client
-      // header) picks it up without prop drilling or a context provider.
+      // Theme travels as CSS variables so every child — including the client
+      // header and hero — picks it up without prop drilling.
       style={
         {
           "--pp-bg": theme.background,
@@ -68,39 +74,30 @@ export default async function ProjectPage({ params }: Params) {
     >
       <ProjectHeader title={title} />
 
-      {/* Clears the fixed header. */}
-      <div className="h-[72px]" />
+      {/* Occupies the fixed header's height, so hero + header together come
+          to exactly one screen. */}
+      <div style={{ height: "var(--pp-header-h)" }} />
 
-      <article className="pt-16 md:pt-24">
-        <header className="mx-auto px-6 md:px-10" style={{ maxWidth: CONTENT_MAX_PX }}>
-          <p
-            className="uppercase tracking-[0.14em]"
-            style={{ fontSize: CAPTION_PX, color: "var(--pp-muted)" }}
-          >
-            {project.industries.join(" · ") || "Project"}
-          </p>
-          <h1
-            className="mt-5 font-medium leading-[1.05] tracking-tight"
-            style={{ fontSize: H1_PX }}
-          >
-            {title}
-          </h1>
-          {subtitle && (
-            <p className="mt-4" style={{ fontSize: LEAD_PX, color: "var(--pp-muted)" }}>
-              {subtitle}
-            </p>
-          )}
-        </header>
+      <ProjectHero
+        url={hero.url}
+        alt={hero.alt}
+        tone={hero.tone}
+        targetId={OVERVIEW_ID}
+      />
 
-        <div
-          className="flex flex-col"
-          style={{ gap: SECTION_GAP_PX, marginTop: SECTION_GAP_PX }}
-        >
-          {blocks.map((block, i) => (
-            <BlockRenderer key={i} block={block} slug={slug} isFirst={i === 0} />
-          ))}
-        </div>
-      </article>
+      <ProjectOverview
+        id={OVERVIEW_ID}
+        project={project}
+        overview={content?.overview}
+        title={title}
+        subtitle={subtitle}
+      />
+
+      <div className="flex flex-col" style={{ gap: SPACE.section, paddingTop: SPACE.section }}>
+        {blocks.map((block, i) => (
+          <BlockRenderer key={i} block={block} slug={slug} />
+        ))}
+      </div>
 
       <MoreProjects currentSlug={slug} />
       <SiteFooter />

@@ -2,105 +2,165 @@
 // Project case study content model
 // ---------------------------------------------------------------------------
 //
-// A case study page is just an ordered list of blocks. To rearrange the page,
-// reorder the array — nothing else needs to change. To add a section, insert a
-// block. Every block is plain data, so no JSX or CSS is involved in editing a
-// project.
+// A page is: a HERO, an OVERVIEW, then an ordered list of BLOCKS.
+// To rearrange the page, reorder `blocks`. To add a section, insert a block.
+// It's all plain data — no JSX, no CSS.
 //
 // PHOTOS
-// Drop image files in:      public/images/projects/<project-slug>/
-// Reference them by name:   { type: "image", src: "hero.jpg" }
-// The folder is implied by the project, so you never type the full path.
-// (A src starting with "/" is used verbatim, for the rare shared image.)
+//   Put files in:    public/images/projects/<project-slug>/
+//   Reference them:  { src: "hero.jpg" }        <- filename only
 //
-// A referenced file that doesn't exist yet renders as a labelled placeholder
-// in the right spot and at the right size, so you can lay out a page before
-// the photography is done.
+//   Any photo you haven't uploaded yet shows as a coloured block in exactly
+//   the right position and size, so you can build the whole page first and
+//   drop images in later. Nothing to change when you do — just add the file.
 // ---------------------------------------------------------------------------
 
-/** A single photo slot. `src` is a filename inside the project's image folder. */
+/** "image" = pink, "highlight" = yellow. Used for placeholders and colour bars. */
+export type Tone = "image" | "highlight";
+
 export type Media = {
+  /** Filename inside the project's folder. Leave blank for a colour block. */
   src?: string;
   alt?: string;
   caption?: string;
-  /**
-   * Force a crop, e.g. "16/9", "4/3", "1/1", "3/4".
-   * Omit to use the photo's own proportions — which is what makes grids
-   * adapt to whatever mix of portrait and landscape shots you give them.
-   */
+  /** Force a crop, e.g. "16/9", "1/1", "4/5". Omit to use the photo's own shape. */
   aspect?: string;
+  /** Placeholder colour while there's no photo. */
+  tone?: Tone;
 };
 
-/** How wide a block sits on the page. */
-export type Width =
-  | "text" // narrow reading column
-  | "wide" // wider than text, still inset from the edges
-  | "full"; // edge to edge
+/** A photo with a title and description under it. */
+export type CaptionedMedia = Media & {
+  title?: string;
+  body?: string;
+};
 
 export type Block =
-  /** Big opening image. Usually the first block. */
-  | ({ type: "hero" } & Media & { width?: Width })
+  /**
+   * A big numbered section heading — "01 Process", "02 Final Design".
+   * Set in large bold display type.
+   */
+  | { type: "section"; number: string; title: string }
 
   /**
-   * The short "here's the situation / here's what I made" pair at the top,
-   * shown side by side on desktop and stacked on mobile.
+   * A full-width colour bar. Either a flat colour block with text on it, or
+   * a subtle background photo with text over it (add `src`).
    */
   | {
-      type: "intro";
-      items: { label: string; body: string }[];
-    }
-
-  /** Horizontal strip of project facts: role, year, team, partner, etc. */
-  | {
-      type: "meta";
-      items: { label: string; value: string }[];
-    }
-
-  /** Prose. `body` takes one string or an array of paragraphs. */
-  | {
-      type: "text";
+      type: "band";
+      tone?: Tone;
       heading?: string;
       body?: string | string[];
-      width?: Width;
-      /** Larger type, for an opening statement. */
-      lead?: boolean;
+      src?: string;
+      alt?: string;
+      /** 0–1. How much to dim a background photo so text stays readable. */
+      overlay?: number;
+      minHeight?: string;
     }
 
-  /** One photo. */
-  | ({ type: "image" } & Media & { width?: Width })
+  /**
+   * A row of photos, each with a title and description underneath.
+   * Collapses to fewer columns on smaller screens automatically.
+   */
+  | {
+      type: "columns";
+      items: CaptionedMedia[];
+      columns?: 2 | 3 | 4;
+      /** Shared crop for the photos. Default "4/5". */
+      aspect?: string;
+    }
 
   /**
-   * Several photos together.
-   *
-   * layout "masonry" (default) keeps every photo's own proportions and packs
-   * them into columns — best when the shots are a mix of shapes.
-   * layout "grid" crops them all to a shared `aspect` for a tidy matrix.
+   * A dynamic photo gallery. Photos keep their own proportions and pack into
+   * rows that fill the width — portrait and landscape shots sit together
+   * without cropping. Rows reflow as the screen narrows.
    */
   | {
       type: "gallery";
       items: Media[];
-      columns?: 2 | 3 | 4;
-      layout?: "masonry" | "grid";
-      /** Shared crop for layout "grid". Ignored by masonry. */
-      aspect?: string;
-      width?: Width;
+      /** Row scale on a wide screen. Bigger = fewer, larger photos per row. */
+      rowHeight?: number;
     }
+
+  /**
+   * A single large piece — the "video if available, otherwise a hero shot".
+   * Set `video` to an .mp4 filename to play a video instead of an image.
+   */
+  | {
+      type: "feature";
+      src?: string;
+      video?: string;
+      alt?: string;
+      caption?: string;
+      /** Default "16/9". */
+      aspect?: string;
+      tone?: Tone;
+    }
+
+  /**
+   * Photo beside text, alternating sides down the page (photo left, then
+   * photo right, then left…). Stacks vertically on phones.
+   */
+  | {
+      type: "split";
+      items: CaptionedMedia[];
+      /** Which side the first photo sits on. Default "left". */
+      start?: "left" | "right";
+      /** Default "4/3". */
+      aspect?: string;
+    }
+
+  /** Plain prose. `body` takes one string or an array of paragraphs. */
+  | {
+      type: "text";
+      heading?: string;
+      body?: string | string[];
+      /** Wider type, for an opening statement. */
+      lead?: boolean;
+    }
+
+  /** One photo on its own. */
+  | ({ type: "image"; full?: boolean } & Media)
 
   /** Pull quote. */
-  | {
-      type: "quote";
-      text: string;
-      attribution?: string;
-    }
+  | { type: "quote"; text: string; attribution?: string }
 
-  /** Manual breathing room, in px, when the default rhythm isn't right. */
+  /** Manual breathing room, in px. */
   | { type: "spacer"; size?: number };
+
+/** An award logo. A plain string is treated as a filename. */
+export type Award =
+  | string
+  | {
+      src: string;
+      alt?: string;
+      /** Optional link out to the award or competition. */
+      href?: string;
+    };
+
+/** The two-column block under the hero. */
+export type Overview = {
+  /** Problem statement. */
+  issue?: string;
+  /** What you made in response. */
+  design?: string;
+  /** e.g. "6 weeks". Shown in the left column. */
+  duration?: string;
+  /**
+   * Award logos. Drop the files in the project's folder (an `awards/`
+   * subfolder works too) and list the filenames:
+   *   awards: ["red-dot.svg", "idsa.png"]
+   */
+  awards?: Award[];
+  /** Extra facts for the left column, beyond the automatic ones. */
+  facts?: { label: string; value: string }[];
+};
 
 /** Page colours. Defaults to a white page with near-black text. */
 export type ProjectTheme = {
   background?: string;
   text?: string;
-  /** Secondary text: captions, meta labels, footer. */
+  /** Secondary text: captions, meta labels. */
   muted?: string;
   /** Hairlines and dividers. */
   rule?: string;
@@ -110,6 +170,9 @@ export type ProjectContent = {
   /** Overrides the title/subtitle from data/projects.ts if set. */
   title?: string;
   subtitle?: string;
+  /** Fills the window on load. Leave `src` blank for a colour block. */
+  hero?: { src?: string; alt?: string; tone?: Tone };
+  overview?: Overview;
   theme?: ProjectTheme;
   blocks: Block[];
 };

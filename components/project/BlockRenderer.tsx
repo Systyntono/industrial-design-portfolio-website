@@ -1,273 +1,401 @@
-import ProjectMedia from "./ProjectMedia";
-import type { Block, Width } from "@/data/projectContent/types";
-import {
-  BODY_PX,
-  CAPTION_PX,
-  CONTENT_MAX_PX,
-  H2_PX,
-  H3_PX,
-  LEAD_PX,
-  TEXT_MAX_CH,
-  TIGHT_GAP_PX,
-} from "./projectScale";
+import Image from "next/image";
+import { resolveSrc } from "@/data/projectContent";
+import type { Block, CaptionedMedia } from "@/data/projectContent/types";
+import ProjectMedia, { MediaFrame, resolveMedia } from "./ProjectMedia";
+import { LAYOUT, PLACEHOLDER, SPACE, type as t } from "./projectTokens";
 
-// Horizontal placement. "full" deliberately gets no padding or max width so
-// it runs edge to edge; everything else is centred inside the page measure.
-function widthStyle(width: Width = "wide"): {
-  className: string;
-  style?: React.CSSProperties;
-} {
-  if (width === "full") return { className: "w-full" };
-  if (width === "text") {
-    return {
-      className: "mx-auto px-6 md:px-10",
-      style: { maxWidth: `${TEXT_MAX_CH}ch` },
-    };
-  }
-  return {
-    className: "mx-auto px-6 md:px-10",
-    style: { maxWidth: CONTENT_MAX_PX },
-  };
-}
-
-function Wrap({
-  width,
+// Centred page container. Everything except full-bleed media sits inside one.
+function Container({
   children,
+  className = "",
 }: {
-  width?: Width;
   children: React.ReactNode;
+  className?: string;
 }) {
-  const { className, style } = widthStyle(width);
   return (
-    <div className={className} style={style}>
+    <div
+      className={`mx-auto w-full ${className}`}
+      style={{
+        maxWidth: LAYOUT.contentMax,
+        paddingLeft: SPACE.pagePad,
+        paddingRight: SPACE.pagePad,
+      }}
+    >
       {children}
     </div>
   );
 }
 
-/** Responsive hint for the image optimizer, matched to the block's width. */
-function sizesFor(width: Width = "wide"): string {
-  if (width === "full") return "100vw";
-  if (width === "text") return "(max-width: 768px) 100vw, 700px";
-  return `(max-width: 768px) 100vw, ${CONTENT_MAX_PX}px`;
+function Paragraphs({
+  body,
+  style,
+}: {
+  body?: string | string[];
+  style?: React.CSSProperties;
+}) {
+  if (!body) return null;
+  const items = Array.isArray(body) ? body : [body];
+  return (
+    <div className="flex flex-col" style={{ gap: "1em" }}>
+      {items.map((p, i) => (
+        <p key={i} style={style}>
+          {p}
+        </p>
+      ))}
+    </div>
+  );
 }
 
-const MASONRY_COLUMNS: Record<number, string> = {
-  2: "columns-1 sm:columns-2",
-  3: "columns-1 sm:columns-2 lg:columns-3",
-  4: "columns-1 sm:columns-2 lg:columns-4",
-};
+/** Title + description under a photo, used by `columns` and `split`. */
+function ItemText({ item }: { item: CaptionedMedia }) {
+  if (!item.title && !item.body) return null;
+  return (
+    <div style={{ marginTop: SPACE.tight }}>
+      {item.title && (
+        <h3 style={{ ...t.h3, color: "var(--pp-fg)" }}>{item.title}</h3>
+      )}
+      {item.body && (
+        <p
+          style={{
+            ...t.body,
+            color: "var(--pp-muted)",
+            marginTop: item.title ? "0.5em" : 0,
+          }}
+        >
+          {item.body}
+        </p>
+      )}
+    </div>
+  );
+}
 
-const GRID_COLUMNS: Record<number, string> = {
+const COLUMN_CLASS: Record<number, string> = {
   2: "grid-cols-1 sm:grid-cols-2",
   3: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
-  4: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4",
+  4: "grid-cols-2 lg:grid-cols-4",
 };
 
 export default async function BlockRenderer({
   block,
   slug,
-  isFirst = false,
 }: {
   block: Block;
   slug: string;
-  isFirst?: boolean;
 }) {
   switch (block.type) {
-    case "hero": {
-      const width = block.width ?? "full";
+    // ── 01 Process / 02 Final Design ──────────────────────────────────────
+    case "section":
       return (
-        <Wrap width={width}>
-          <ProjectMedia
-            slug={slug}
-            src={block.src}
-            alt={block.alt}
-            caption={block.caption}
-            aspect={block.aspect}
-            sizes={sizesFor(width)}
-            priority={isFirst}
-          />
-        </Wrap>
+        <Container>
+          <h2 style={{ ...t.display, color: "var(--pp-fg)" }}>
+            <span className="block">{block.number}</span>
+            <span className="block">{block.title}</span>
+          </h2>
+        </Container>
+      );
+
+    // ── Wide colour bar, optionally with a background photo ───────────────
+    case "band": {
+      const tone = block.tone ?? "image";
+      const url = resolveSrc(slug, block.src);
+      const meta = url ? await resolveMedia(slug, { src: block.src }) : null;
+      const hasPhoto = Boolean(meta?.url);
+
+      return (
+        <section
+          className="relative w-full overflow-hidden"
+          style={{
+            background: hasPhoto ? "transparent" : PLACEHOLDER[tone],
+            minHeight: block.minHeight ?? LAYOUT.bandMinHeight,
+          }}
+        >
+          {hasPhoto && meta?.url && (
+            <>
+              <Image
+                src={meta.url}
+                alt={block.alt ?? ""}
+                fill
+                sizes="100vw"
+                className="object-cover"
+              />
+              <div
+                aria-hidden
+                className="absolute inset-0"
+                style={{ background: `rgba(0,0,0,${block.overlay ?? 0.25})` }}
+              />
+            </>
+          )}
+
+          <div
+            className="relative flex items-center"
+            style={{ minHeight: block.minHeight ?? LAYOUT.bandMinHeight }}
+          >
+            <Container>
+              <div style={{ maxWidth: LAYOUT.textMax }}>
+                {block.heading && (
+                  <h3
+                    style={{
+                      ...t.h2,
+                      color: hasPhoto ? "#fff" : "#111",
+                      marginBottom: block.body ? SPACE.tight : 0,
+                    }}
+                  >
+                    {block.heading}
+                  </h3>
+                )}
+                <Paragraphs
+                  body={block.body}
+                  style={{ ...t.lead, color: hasPhoto ? "#f5f5f5" : "#111" }}
+                />
+              </div>
+            </Container>
+          </div>
+        </section>
       );
     }
 
-    case "intro":
+    // ── Row of photos, each with a title + description ────────────────────
+    case "columns": {
+      const columns = block.columns ?? 3;
+      const aspect = block.aspect ?? "4/5";
+      const sizes = `(max-width: 640px) 100vw, (max-width: 1024px) 50vw, ${Math.round(
+        LAYOUT.contentMax / columns
+      )}px`;
+
       return (
-        <Wrap>
-          <div className="grid gap-10 md:grid-cols-2 md:gap-16">
-            {block.items.map((item) => (
-              <div key={item.label}>
-                <p
-                  className="uppercase tracking-[0.14em]"
-                  style={{ fontSize: CAPTION_PX, color: "var(--pp-muted)" }}
-                >
-                  {item.label}
-                </p>
-                <p
-                  className="mt-4 leading-snug"
-                  style={{ fontSize: LEAD_PX, color: "var(--pp-fg)" }}
-                >
-                  {item.body}
-                </p>
-              </div>
+        <Container>
+          <div
+            className={`grid ${COLUMN_CLASS[columns] ?? COLUMN_CLASS[3]}`}
+            style={{ gap: SPACE.gutter, rowGap: SPACE.block }}
+          >
+            {block.items.map(async (item, i) => {
+              const resolved = await resolveMedia(slug, item, aspect);
+              return (
+                <div key={`${item.src ?? "slot"}-${i}`}>
+                  <MediaFrame resolved={resolved} sizes={sizes} />
+                  <ItemText item={item} />
+                </div>
+              );
+            })}
+          </div>
+        </Container>
+      );
+    }
+
+    // ── Dynamic gallery ───────────────────────────────────────────────────
+    //
+    // Photos keep their true proportions and pack into rows that fill the
+    // width. Within a row each photo's width is proportional to its aspect
+    // ratio, so every photo in that row resolves to the same height and
+    // nothing gets cropped.
+    //
+    // This is done entirely in CSS (flex-wrap + flex-grow), not by computing
+    // rows at build time — which means it reflows correctly at *any* screen
+    // width, including on rotation, with no JavaScript and no layout shift.
+    case "gallery": {
+      const rowHeight = block.rowHeight ?? LAYOUT.galleryRowHeight;
+      const resolved = await Promise.all(
+        block.items.map((item) => resolveMedia(slug, item))
+      );
+
+      return (
+        <Container>
+          <div className="flex flex-wrap" style={{ gap: SPACE.gutter }}>
+            {resolved.map((r, i) => (
+              <figure
+                key={`${r.label ?? "slot"}-${i}`}
+                style={{
+                  flexGrow: r.aspect,
+                  flexBasis: 0,
+                  // Forces a wrap before photos get too small to read.
+                  minWidth: `min(${LAYOUT.galleryMinItem}px, 100%)`,
+                  // Stops a short final row from blowing its photos up to
+                  // full width — they cap at their natural size instead.
+                  maxWidth: r.aspect * rowHeight,
+                }}
+              >
+                <MediaFrame
+                  resolved={r}
+                  sizes={`(max-width: 640px) 100vw, ${Math.round(r.aspect * rowHeight)}px`}
+                />
+                {r.caption && (
+                  <figcaption className="mt-2" style={{ ...t.caption, color: "var(--pp-muted)" }}>
+                    {r.caption}
+                  </figcaption>
+                )}
+              </figure>
             ))}
           </div>
-        </Wrap>
-      );
-
-    case "meta":
-      return (
-        <Wrap>
-          <dl
-            className="grid grid-cols-2 gap-x-8 gap-y-6 border-y py-8 md:grid-cols-4"
-            style={{ borderColor: "var(--pp-rule)" }}
-          >
-            {block.items.map((item) => (
-              <div key={item.label}>
-                <dt
-                  className="uppercase tracking-[0.14em]"
-                  style={{ fontSize: CAPTION_PX, color: "var(--pp-muted)" }}
-                >
-                  {item.label}
-                </dt>
-                <dd className="mt-2" style={{ fontSize: BODY_PX, color: "var(--pp-fg)" }}>
-                  {item.value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </Wrap>
-      );
-
-    case "text": {
-      const paragraphs =
-        block.body === undefined
-          ? []
-          : Array.isArray(block.body)
-            ? block.body
-            : [block.body];
-      const size = block.lead ? LEAD_PX : BODY_PX;
-      return (
-        <Wrap width={block.width ?? "text"}>
-          {block.heading && (
-            <h2
-              className="font-medium tracking-tight leading-tight"
-              style={{ fontSize: H2_PX, color: "var(--pp-fg)" }}
-            >
-              {block.heading}
-            </h2>
-          )}
-          {paragraphs.length > 0 && (
-            <div
-              className="flex flex-col"
-              style={{
-                marginTop: block.heading ? TIGHT_GAP_PX : 0,
-                gap: "1.1em",
-              }}
-            >
-              {paragraphs.map((p, i) => (
-                <p
-                  key={i}
-                  className="leading-relaxed"
-                  style={{ fontSize: size, color: "var(--pp-fg)" }}
-                >
-                  {p}
-                </p>
-              ))}
-            </div>
-          )}
-        </Wrap>
+        </Container>
       );
     }
 
-    case "image": {
-      const width = block.width ?? "wide";
-      return (
-        <Wrap width={width}>
-          <ProjectMedia
-            slug={slug}
-            src={block.src}
-            alt={block.alt}
-            caption={block.caption}
-            aspect={block.aspect}
-            sizes={sizesFor(width)}
-            priority={isFirst}
-          />
-        </Wrap>
-      );
-    }
+    // ── Video, or a large hero shot ───────────────────────────────────────
+    case "feature": {
+      const aspect = block.aspect ?? "16/9";
+      const videoUrl = resolveSrc(slug, block.video);
 
-    case "gallery": {
-      const width = block.width ?? "wide";
-      const columns = block.columns ?? 3;
-      const layout = block.layout ?? "masonry";
-      // Masonry sizing is per column, so the optimizer hint has to be too.
-      const sizes =
-        width === "full"
-          ? `(max-width: 640px) 100vw, ${Math.round(100 / columns)}vw`
-          : `(max-width: 640px) 100vw, ${Math.round(CONTENT_MAX_PX / columns)}px`;
-
-      if (layout === "grid") {
+      if (videoUrl) {
         return (
-          <Wrap width={width}>
-            <div className={`grid gap-6 ${GRID_COLUMNS[columns] ?? GRID_COLUMNS[3]}`}>
-              {block.items.map((item, i) => (
-                <ProjectMedia
-                  key={`${item.src ?? "slot"}-${i}`}
-                  slug={slug}
-                  {...item}
-                  aspect={item.aspect ?? block.aspect ?? "4/3"}
-                  sizes={sizes}
-                />
-              ))}
-            </div>
-          </Wrap>
+          <Container>
+            <video
+              // playsInline + muted are what allow inline autoplay on iOS;
+              // without them Safari opens the video fullscreen instead.
+              playsInline
+              muted
+              loop
+              autoPlay
+              controls
+              preload="metadata"
+              className="w-full"
+              style={{ aspectRatio: aspect, borderRadius: LAYOUT.radius, background: "#000" }}
+            >
+              <source src={videoUrl} />
+            </video>
+            {block.caption && (
+              <p className="mt-3" style={{ ...t.caption, color: "var(--pp-muted)" }}>
+                {block.caption}
+              </p>
+            )}
+          </Container>
         );
       }
 
-      // Masonry: CSS columns let every photo keep its own proportions, so a
-      // mixed set of portrait and landscape shots packs without cropping.
       return (
-        <Wrap width={width}>
-          <div className={`gap-6 ${MASONRY_COLUMNS[columns] ?? MASONRY_COLUMNS[3]}`}>
-            {block.items.map((item, i) => (
-              <ProjectMedia
-                key={`${item.src ?? "slot"}-${i}`}
-                slug={slug}
-                {...item}
-                sizes={sizes}
-                className="mb-6 break-inside-avoid"
-              />
-            ))}
+        <Container>
+          <ProjectMedia
+            slug={slug}
+            media={{ src: block.src, alt: block.alt, caption: block.caption, tone: block.tone }}
+            defaultAspect={aspect}
+            sizes={`(max-width: 640px) 100vw, ${LAYOUT.contentMax}px`}
+          />
+        </Container>
+      );
+    }
+
+    // ── Photo beside text, alternating sides ──────────────────────────────
+    case "split": {
+      const aspect = block.aspect ?? "4/3";
+      const startRight = block.start === "right";
+      const sizes = `(max-width: 768px) 100vw, ${Math.round(LAYOUT.contentMax * 0.618)}px`;
+
+      return (
+        <Container>
+          <div className="flex flex-col" style={{ gap: SPACE.block }}>
+            {block.items.map(async (item, i) => {
+              const resolved = await resolveMedia(slug, item, aspect);
+              const photoRight = startRight ? i % 2 === 0 : i % 2 === 1;
+
+              return (
+                <div
+                  key={`${item.src ?? "slot"}-${i}`}
+                  className="grid items-center md:grid-cols-[1.618fr_1fr]"
+                  style={{ gap: SPACE.block }}
+                >
+                  <div
+                    // Source order stays photo-then-text so it reads
+                    // correctly stacked on a phone; only the desktop grid
+                    // swaps sides.
+                    className={photoRight ? "md:order-2" : "md:order-1"}
+                  >
+                    <MediaFrame resolved={resolved} sizes={sizes} />
+                  </div>
+                  <div className={photoRight ? "md:order-1" : "md:order-2"}>
+                    {item.title && <h3 style={{ ...t.h3, color: "var(--pp-fg)" }}>{item.title}</h3>}
+                    {item.body && (
+                      <p
+                        style={{
+                          ...t.body,
+                          color: "var(--pp-muted)",
+                          marginTop: item.title ? "0.6em" : 0,
+                        }}
+                      >
+                        {item.body}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        </Wrap>
+        </Container>
+      );
+    }
+
+    // ── Prose ─────────────────────────────────────────────────────────────
+    case "text":
+      return (
+        <Container>
+          <div style={{ maxWidth: LAYOUT.textMax }}>
+            {block.heading && (
+              <h3 style={{ ...t.h2, color: "var(--pp-fg)", marginBottom: SPACE.tight }}>
+                {block.heading}
+              </h3>
+            )}
+            <Paragraphs
+              body={block.body}
+              style={{
+                ...(block.lead ? t.lead : t.body),
+                color: block.lead ? "var(--pp-fg)" : "var(--pp-muted)",
+              }}
+            />
+          </div>
+        </Container>
+      );
+
+    // ── One photo ─────────────────────────────────────────────────────────
+    case "image": {
+      const media = {
+        src: block.src,
+        alt: block.alt,
+        caption: block.caption,
+        aspect: block.aspect,
+        tone: block.tone,
+      };
+
+      if (block.full) {
+        const resolved = await resolveMedia(slug, media);
+        return (
+          <figure className="w-full">
+            <MediaFrame resolved={resolved} sizes="100vw" style={{ borderRadius: 0 }} />
+            {resolved.caption && (
+              <Container>
+                <figcaption className="mt-3" style={{ ...t.caption, color: "var(--pp-muted)" }}>
+                  {resolved.caption}
+                </figcaption>
+              </Container>
+            )}
+          </figure>
+        );
+      }
+
+      return (
+        <Container>
+          <ProjectMedia
+            slug={slug}
+            media={media}
+            sizes={`(max-width: 640px) 100vw, ${LAYOUT.contentMax}px`}
+          />
+        </Container>
       );
     }
 
     case "quote":
       return (
-        <Wrap width="text">
-          <blockquote>
-            <p
-              className="leading-snug tracking-tight"
-              style={{ fontSize: H3_PX, color: "var(--pp-fg)" }}
-            >
-              {block.text}
-            </p>
+        <Container>
+          <blockquote style={{ maxWidth: LAYOUT.textMax }}>
+            <p style={{ ...t.h2, color: "var(--pp-fg)" }}>{block.text}</p>
             {block.attribution && (
-              <footer
-                className="mt-4 uppercase tracking-[0.14em]"
-                style={{ fontSize: CAPTION_PX, color: "var(--pp-muted)" }}
-              >
+              <footer className="mt-4" style={{ ...t.label, color: "var(--pp-muted)" }}>
                 {block.attribution}
               </footer>
             )}
           </blockquote>
-        </Wrap>
+        </Container>
       );
 
     case "spacer":
-      return <div style={{ height: block.size ?? 80 }} />;
+      return <div style={{ height: block.size ?? 64 }} />;
 
     default:
       return null;
