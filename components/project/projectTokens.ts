@@ -139,11 +139,32 @@ export const LAYOUT = {
    * Target height for a row of gallery photos on a wide screen. Rows reflow
    * fluidly, so this only sets the scale, not a hard row height.
    */
-  galleryRowHeight: 420,
+  galleryRowHeight: 560,
   /** Smallest a gallery photo may get before the row wraps. */
-  galleryMinItem: 190,
+  galleryMinItem: 360,
+  /**
+   * How far past its target height a photo may grow so that a short final
+   * row still reaches the right edge instead of stopping short. Stops a lone
+   * trailing photo from ballooning to the full width.
+   */
+  galleryMaxGrow: 1.9,
   bandMinHeight: fluid(220, 380), // the wide colour bars
   radius: 2, // px — corner rounding on media
+};
+
+// ── 12-COLUMN GRID ─────────────────────────────────────────────────────────
+// Every page aligns to the same 12 columns, with gutters set to 20% of a
+// column width.
+//
+//   12 columns + 11 gutters = 100%
+//   12c + 11(0.2c) = 14.2c = 100%   →   gutter = 0.2c = 100/71 %
+//
+// Expressing the gutter as a percentage rather than a fixed px value is what
+// keeps the proportions identical at every window size and orientation.
+export const GRID = {
+  columns: 12,
+  /** 20% of one column, as a percentage of the grid's own width. */
+  gutter: "calc(100% / 71)",
 };
 
 // ── PLACEHOLDER COLOURS ────────────────────────────────────────────────────

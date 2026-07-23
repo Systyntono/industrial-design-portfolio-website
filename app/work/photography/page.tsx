@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import { photography } from "@/data/photography";
 import { getPhotoSeries, PHOTO_DIR } from "@/lib/photography";
 import { DEFAULT_THEME } from "@/data/projectContent/types";
-import ProjectHeader from "@/components/project/ProjectHeader";
+import SiteNav from "@/components/home/SiteNav";
 import PhotoGallery from "@/components/project/PhotoGallery";
 import SiteFooter from "@/components/project/SiteFooter";
+import { Col, GridSection } from "@/components/project/Grid";
 import { LAYOUT, SPACE, type as t } from "@/components/project/projectTokens";
 
 // A static segment, so it takes precedence over /work/[slug]. Photography is
@@ -35,27 +36,29 @@ export default async function PhotographyPage() {
       }
       className="min-h-screen"
     >
-      <ProjectHeader title={photography.title} />
+      <SiteNav variant="onLight" hideOnScroll />
       <div style={{ height: "var(--pp-header-h)" }} />
 
       <article className="pt-16 md:pt-24">
-        <header className="mx-auto px-6 md:px-10" style={{ maxWidth: LAYOUT.contentMax }}>
-          <h1 className="font-medium leading-[1.05] tracking-tight" style={{ ...t.h1 }}>
-            {photography.title}
-          </h1>
-          {photography.intro && (
-            <p
-              className="mt-6 leading-snug"
-              style={{ ...t.lead, color: "var(--pp-muted)", maxWidth: "52ch" }}
-            >
-              {photography.intro}
-            </p>
-          )}
-        </header>
+        <GridSection>
+          <Col className="col-span-12 md:col-span-8 lg:col-span-7">
+            <h1 style={{ ...t.h1, color: "var(--pp-fg)" }}>{photography.title}</h1>
+            {photography.intro && (
+              <p className="mt-6" style={{ ...t.lead, color: "var(--pp-muted)" }}>
+                {photography.intro}
+              </p>
+            )}
+          </Col>
+        </GridSection>
 
         <div
-          className="mx-auto px-6 md:px-10"
-          style={{ maxWidth: LAYOUT.contentMax, marginTop: SPACE.section }}
+          className="mx-auto w-full"
+          style={{
+            maxWidth: LAYOUT.contentMax,
+            paddingLeft: SPACE.pagePad,
+            paddingRight: SPACE.pagePad,
+            marginTop: SPACE.section,
+          }}
         >
           {isEmpty ? (
             <div

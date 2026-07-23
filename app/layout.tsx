@@ -34,9 +34,9 @@ export default function RootLayout({
             </Script>
           </>
         )}
-        {/* Each page supplies its own header/footer — the gallery home page
-            has its fixed DJ chrome, project pages have ProjectHeader and
-            SiteFooter — so the layout stays out of their way. */}
+        {/* Each page supplies its own chrome — the gallery has its DJ
+            controls, project pages have SiteNav and SiteFooter — so the
+            layout stays out of their way. */}
         {children}
       </body>
     </html>

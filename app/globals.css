@@ -183,3 +183,42 @@ html {
     animation: none;
   }
 }
+
+/* ── Circle-wipe page entrance ─────────────────────────────────────────── */
+/* The hero image drops in as a circle, settles centre, then opens out to
+   fill the window. clip-path + transform are both GPU-composited, so this
+   stays smooth on phones where animating width/height would not. */
+@keyframes pp-entrance {
+  0% {
+    clip-path: circle(18vmin at 50% -25%);
+  }
+  45% {
+    clip-path: circle(18vmin at 50% 50%);
+  }
+  55% {
+    clip-path: circle(18vmin at 50% 50%);
+  }
+  100% {
+    clip-path: circle(150vmax at 50% 50%);
+  }
+}
+
+.pp-entrance {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  animation-name: pp-entrance;
+  animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+  animation-fill-mode: forwards;
+  will-change: clip-path;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pp-entrance {
+    display: none;
+  }
+}

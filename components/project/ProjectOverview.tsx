@@ -3,7 +3,8 @@ import { getImageMeta } from "@/lib/imageMeta";
 import { resolveSrc } from "@/data/projectContent";
 import type { Award, Overview } from "@/data/projectContent/types";
 import type { Project } from "@/data/projects";
-import { LAYOUT, SPACE, type as t } from "./projectTokens";
+import { Col, Container, Grid } from "./Grid";
+import { SPACE, type as t } from "./projectTokens";
 
 const AWARD_HEIGHT = 44; // px — logos are normalised to this height
 
@@ -23,7 +24,7 @@ async function resolveAward(slug: string, award: Award) {
 
 function Fact({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex flex-col">
+    <div>
       <dt style={{ ...t.label, color: "var(--pp-muted)" }}>{label}</dt>
       <dd className="mt-1" style={{ ...t.body, color: "var(--pp-fg)" }}>
         {value}
@@ -35,7 +36,7 @@ function Fact({ label, value }: { label: string; value: string }) {
 /**
  * The block directly under the hero — the one the scroll arrow targets.
  *
- * Most of the left column is pulled straight from data/projects.ts, so the
+ * Most of the left column comes straight from data/projects.ts, so a
  * project's industries, tools, team and year are never typed twice.
  */
 export default async function ProjectOverview({
@@ -69,117 +70,113 @@ export default async function ProjectOverview({
 
   return (
     <section style={{ paddingTop: SPACE.section }}>
-      <div
-        id={id}
-        className="mx-auto w-full"
-        // The scroll anchor sits on the content, not on the padded section —
-        // otherwise the arrow would land the reader on the section's top
-        // padding, leaving the title a screenful of whitespace below the
-        // header. The extra 24px keeps the title off the header edge.
-        style={{
-          scrollMarginTop: "calc(var(--pp-header-h) + 24px)",
-          maxWidth: LAYOUT.contentMax,
-          paddingLeft: SPACE.pagePad,
-          paddingRight: SPACE.pagePad,
-        }}
-      >
+      <Container>
         <div
-          className="grid md:grid-cols-[1fr_1.618fr]"
-          style={{ gap: SPACE.block }}
+          id={id}
+          // The scroll anchor sits on the content, not on the padded section
+          // — otherwise the arrow lands the reader on the section's top
+          // padding, leaving the title a screenful below the header. The
+          // extra 24px keeps the title off the header edge.
+          style={{ scrollMarginTop: "calc(var(--pp-header-h) + 24px)" }}
         >
-          {/* Left — title and facts */}
-          <div>
-            <h1 style={{ ...t.h1, color: "var(--pp-fg)" }}>{title}</h1>
-            {subtitle && (
-              <p className="mt-2" style={{ ...t.lead, color: "var(--pp-muted)" }}>
-                {subtitle}
-              </p>
-            )}
-
-            <dl
-              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-1"
-              style={{ gap: SPACE.tight, marginTop: SPACE.block }}
-            >
-              {facts.map((f) => (
-                <Fact key={f.label} label={f.label} value={f.value} />
-              ))}
-            </dl>
-          </div>
-
-          {/* Right — issue, design, awards */}
-          <div className="flex flex-col" style={{ gap: SPACE.block }}>
-            {overview?.issue && (
-              <div>
-                <h2 style={{ ...t.label, color: "var(--pp-muted)" }}>Issue</h2>
-                <p className="mt-3" style={{ ...t.lead, color: "var(--pp-fg)" }}>
-                  {overview.issue}
+          <Grid rowGap={SPACE.section}>
+            {/* Left — title and facts: 5 of 12 columns */}
+            <Col className="col-span-12 md:col-span-5">
+              <h1 style={{ ...t.h1, color: "var(--pp-fg)" }}>{title}</h1>
+              {subtitle && (
+                <p className="mt-2" style={{ ...t.lead, color: "var(--pp-muted)" }}>
+                  {subtitle}
                 </p>
-              </div>
-            )}
+              )}
 
-            {overview?.design && (
-              <div>
-                <h2 style={{ ...t.label, color: "var(--pp-muted)" }}>Design</h2>
-                <p className="mt-3" style={{ ...t.lead, color: "var(--pp-fg)" }}>
-                  {overview.design}
-                </p>
-              </div>
-            )}
+              <dl
+                className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-1"
+                style={{ gap: SPACE.tight, marginTop: SPACE.block }}
+              >
+                {facts.map((f) => (
+                  <Fact key={f.label} label={f.label} value={f.value} />
+                ))}
+              </dl>
+            </Col>
 
-            {awards.length > 0 && (
-              <div>
-                <h2 style={{ ...t.label, color: "var(--pp-muted)" }}>Awards</h2>
-                <ul className="mt-4 flex flex-wrap items-center" style={{ gap: SPACE.block }}>
-                  {awards.map((a, i) => {
-                    const logo = a.url ? (
-                      <Image
-                        src={a.url}
-                        alt={a.alt}
-                        width={Math.round(a.width)}
-                        height={AWARD_HEIGHT}
-                        style={{ height: AWARD_HEIGHT, width: "auto" }}
-                      />
-                    ) : (
-                      // Keeps the row's shape before the logo is uploaded.
-                      <span
-                        className="flex items-center justify-center px-3"
-                        style={{
-                          height: AWARD_HEIGHT,
-                          minWidth: AWARD_HEIGHT * 2,
-                          border: "1px dashed var(--pp-rule)",
-                          ...t.caption,
-                          color: "var(--pp-muted)",
-                        }}
-                      >
-                        {a.label}
-                      </span>
-                    );
+            {/* Right — issue, design, awards: 6 of 12, offset by one so it
+                starts on column 7 and runs to the right edge. */}
+            <Col className="col-span-12 md:col-span-6 md:col-start-7">
+              <div className="flex flex-col" style={{ gap: SPACE.block }}>
+                {overview?.issue && (
+                  <div>
+                    <h2 style={{ ...t.label, color: "var(--pp-muted)" }}>Issue</h2>
+                    <p className="mt-3" style={{ ...t.lead, color: "var(--pp-fg)" }}>
+                      {overview.issue}
+                    </p>
+                  </div>
+                )}
 
-                    return (
-                      <li key={`${a.label}-${i}`}>
-                        {a.href ? (
-                          <a
-                            href={a.href}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="transition-opacity hover:opacity-60"
-                          >
-                            {logo}
-                          </a>
+                {overview?.design && (
+                  <div>
+                    <h2 style={{ ...t.label, color: "var(--pp-muted)" }}>Design</h2>
+                    <p className="mt-3" style={{ ...t.lead, color: "var(--pp-fg)" }}>
+                      {overview.design}
+                    </p>
+                  </div>
+                )}
+
+                {awards.length > 0 && (
+                  <div>
+                    <h2 style={{ ...t.label, color: "var(--pp-muted)" }}>Awards</h2>
+                    <ul className="mt-4 flex flex-wrap items-center" style={{ gap: SPACE.block }}>
+                      {awards.map((a, i) => {
+                        const logo = a.url ? (
+                          <Image
+                            src={a.url}
+                            alt={a.alt}
+                            width={Math.round(a.width)}
+                            height={AWARD_HEIGHT}
+                            style={{ height: AWARD_HEIGHT, width: "auto" }}
+                          />
                         ) : (
-                          logo
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
+                          // Holds the row's shape before the logo is uploaded.
+                          <span
+                            className="flex items-center justify-center px-3"
+                            style={{
+                              height: AWARD_HEIGHT,
+                              minWidth: AWARD_HEIGHT * 2,
+                              border: "1px dashed var(--pp-rule)",
+                              ...t.caption,
+                              color: "var(--pp-muted)",
+                            }}
+                          >
+                            {a.label}
+                          </span>
+                        );
+
+                        return (
+                          <li key={`${a.label}-${i}`}>
+                            {a.href ? (
+                              <a
+                                href={a.href}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="transition-opacity hover:opacity-60"
+                              >
+                                {logo}
+                              </a>
+                            ) : (
+                              logo
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </Col>
+          </Grid>
         </div>
 
         <hr style={{ borderColor: "var(--pp-rule)", marginTop: SPACE.section }} />
-      </div>
+      </Container>
     </section>
   );
 }

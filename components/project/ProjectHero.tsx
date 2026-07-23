@@ -1,7 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { PLACEHOLDER, type as t, type Tone } from "./projectTokens";
+import { PLACEHOLDER, type Tone } from "./projectTokens";
+
+// Scaled up 50% from the original 28px glyph / 48px hit area.
+const GLYPH_PX = 42;
+const HIT_PX = 64;
 
 /**
  * Fills exactly one screen — never more, so nothing is cut off and the page
@@ -28,7 +32,7 @@ export default function ProjectHero({
     const el = document.getElementById(targetId);
     if (!el) return;
     // `scroll-margin-top` on the target handles the fixed header offset, so
-    // the overview lands flush under it rather than beneath it.
+    // the title lands flush under it rather than beneath it.
     el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
@@ -37,43 +41,32 @@ export default function ProjectHero({
       className="pp-hero relative w-full overflow-hidden"
       style={{ background: url ? "transparent" : PLACEHOLDER[tone] }}
     >
-      {url && (
-        <Image
-          src={url}
-          alt={alt}
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover"
-        />
-      )}
+      {url && <Image src={url} alt={alt} fill priority sizes="100vw" className="object-cover" />}
 
       <button
         type="button"
         onClick={scrollToContent}
         aria-label="Scroll to project details"
-        className="pp-arrow absolute left-1/2 flex items-center justify-center rounded-full transition-opacity hover:opacity-60 focus-visible:outline focus-visible:outline-2"
+        className="pp-arrow absolute left-1/2 flex items-center justify-center transition-opacity hover:opacity-60"
         style={{
-          // 44px is the minimum comfortable touch target on iOS and Android.
-          width: 48,
-          height: 48,
+          width: HIT_PX,
+          height: HIT_PX,
           bottom: "max(1.5rem, env(safe-area-inset-bottom))",
           transform: "translateX(-50%)",
-          color: url ? "#ffffff" : "#00000088",
+          color: url ? "#ffffff" : "#00000099",
         }}
       >
         <svg
-          width="28"
-          height="28"
+          width={GLYPH_PX}
+          height={GLYPH_PX}
           viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+          fill="currentColor"
           aria-hidden
+          // A solid triangle reads at a glance where a thin chevron can get
+          // lost against a busy photo.
+          style={{ filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.35))" }}
         >
-          <path d="M6 9l6 6 6-6" />
+          <path d="M12 17 3.5 7h17z" />
         </svg>
       </button>
     </section>

@@ -5,8 +5,9 @@ import { getProjectContent } from "@/data/projectContent";
 import { DEFAULT_THEME } from "@/data/projectContent/types";
 import { resolveMedia } from "@/components/project/ProjectMedia";
 import BlockRenderer from "@/components/project/BlockRenderer";
-import ProjectHeader from "@/components/project/ProjectHeader";
+import SiteNav from "@/components/home/SiteNav";
 import ProjectHero from "@/components/project/ProjectHero";
+import ProjectEntrance from "@/components/project/ProjectEntrance";
 import ProjectOverview from "@/components/project/ProjectOverview";
 import MoreProjects from "@/components/project/MoreProjects";
 import SiteFooter from "@/components/project/SiteFooter";
@@ -42,8 +43,8 @@ export default async function ProjectPage({ params }: Params) {
   const title = content?.title ?? project.title;
   const subtitle = content?.subtitle ?? project.subtitle;
 
-  // Resolved on the server so the hero renders a colour block, with no
-  // flash of empty space, when the photo isn't uploaded yet.
+  // Resolved on the server so the hero shows a colour block, with no flash
+  // of empty space, when the photo isn't uploaded yet.
   const hero = await resolveMedia(slug, {
     src: content?.hero?.src,
     alt: content?.hero?.alt ?? title,
@@ -72,18 +73,18 @@ export default async function ProjectPage({ params }: Params) {
       }
       className="min-h-screen"
     >
-      <ProjectHeader title={title} />
+      <ProjectEntrance url={hero.url} />
 
-      {/* Occupies the fixed header's height, so hero + header together come
-          to exactly one screen. */}
+      {/* Same header as the gallery, in its dark-on-light variant. It hides
+          on scroll here because, unlike the gallery, this page is long and
+          the bar has no backdrop to sit on. */}
+      <SiteNav variant="onLight" hideOnScroll />
+
+      {/* Occupies the fixed header's height, so header + hero come to
+          exactly one screen. */}
       <div style={{ height: "var(--pp-header-h)" }} />
 
-      <ProjectHero
-        url={hero.url}
-        alt={hero.alt}
-        tone={hero.tone}
-        targetId={OVERVIEW_ID}
-      />
+      <ProjectHero url={hero.url} alt={hero.alt} tone={hero.tone} targetId={OVERVIEW_ID} />
 
       <ProjectOverview
         id={OVERVIEW_ID}
@@ -93,10 +94,18 @@ export default async function ProjectPage({ params }: Params) {
         subtitle={subtitle}
       />
 
-      <div className="flex flex-col" style={{ gap: SPACE.section, paddingTop: SPACE.section }}>
-        {blocks.map((block, i) => (
-          <BlockRenderer key={i} block={block} slug={slug} />
-        ))}
+      <div style={{ paddingTop: SPACE.section }}>
+        {blocks.map((block, i) => {
+          // Adjacent colour bars butt directly against each other — a gap
+          // between them would read as a mistake rather than as rhythm.
+          const prev = blocks[i - 1];
+          const bandRun = i > 0 && block.type === "band" && prev?.type === "band";
+          return (
+            <div key={i} style={{ marginTop: i === 0 ? 0 : bandRun ? 0 : SPACE.section }}>
+              <BlockRenderer block={block} slug={slug} />
+            </div>
+          );
+        })}
       </div>
 
       <MoreProjects currentSlug={slug} />
