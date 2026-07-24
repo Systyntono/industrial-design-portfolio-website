@@ -7,7 +7,6 @@ import { resolveMedia } from "@/components/project/ProjectMedia";
 import BlockRenderer from "@/components/project/BlockRenderer";
 import SiteNav from "@/components/home/SiteNav";
 import ProjectHero from "@/components/project/ProjectHero";
-import ProjectEntrance from "@/components/project/ProjectEntrance";
 import ProjectOverview from "@/components/project/ProjectOverview";
 import MoreProjects from "@/components/project/MoreProjects";
 import SiteFooter from "@/components/project/SiteFooter";
@@ -73,8 +72,6 @@ export default async function ProjectPage({ params }: Params) {
       }
       className="min-h-screen"
     >
-      <ProjectEntrance url={hero.url} />
-
       {/* Same header as the gallery, in its dark-on-light variant. It hides
           on scroll here because, unlike the gallery, this page is long and
           the bar has no backdrop to sit on. */}

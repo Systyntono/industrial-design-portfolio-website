@@ -129,6 +129,17 @@ body {
    height calculation. Smaller on phones so the hero gets more room. */
 :root {
   --pp-header-h: 56px;
+  /* Grid side padding. MUST stay equal to SPACE.pagePad (= fluid(20,40)) in
+     components/project/projectTokens.ts so the fixed gallery chrome (logo,
+     DJ controls, title band, nav links) lines up with grid-based page
+     content. */
+  --pp-pad: clamp(20px, 13.33px + 1.852vw, 40px);
+  --pp-content-max: 1600px;
+  /* Left edge of the centred content column — where grid column 1 starts.
+     Insets from the viewport once the window passes --pp-content-max, which
+     is why fixed chrome must reference this rather than a raw viewport
+     inset. */
+  --pp-edge: calc(max(0px, (100vw - var(--pp-content-max)) / 2) + var(--pp-pad));
 }
 @media (min-width: 768px) {
   :root {
@@ -184,41 +195,46 @@ html {
   }
 }
 
-/* ── Circle-wipe page entrance ─────────────────────────────────────────── */
-/* The hero image drops in as a circle, settles centre, then opens out to
-   fill the window. clip-path + transform are both GPU-composited, so this
-   stays smooth on phones where animating width/height would not. */
-@keyframes pp-entrance {
+
+/* ── Paint-drop page transition ────────────────────────────────────────── */
+/* A porthole of the destination hero drops from above, holds at centre, then
+   irises open to fill the screen. clip-path is GPU-composited, so this stays
+   smooth on phones. The from-page shows through the transparent area around
+   the clip — the "paint" lands on the page you're leaving. Per-keyframe
+   timing functions give the drop an ease-out (weighty landing) and the fill
+   an ease-in (accelerating spread). */
+@keyframes pp-drop {
   0% {
-    clip-path: circle(18vmin at 50% -25%);
+    clip-path: circle(16vmin at 50% -25%);
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   }
-  45% {
-    clip-path: circle(18vmin at 50% 50%);
+  40% {
+    clip-path: circle(16vmin at 50% 50%);
+    animation-timing-function: linear;
   }
-  55% {
-    clip-path: circle(18vmin at 50% 50%);
+  57% {
+    clip-path: circle(16vmin at 50% 50%);
+    animation-timing-function: cubic-bezier(0.7, 0, 0.84, 0);
   }
   100% {
-    clip-path: circle(150vmax at 50% 50%);
+    clip-path: circle(155vmax at 50% 50%);
   }
 }
 
-.pp-entrance {
+.pp-drop {
   position: fixed;
   inset: 0;
-  z-index: 200;
+  z-index: 300;
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
   pointer-events: none;
-  animation-name: pp-entrance;
-  animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
-  animation-fill-mode: forwards;
+  animation: pp-drop var(--pp-drop-ms, 1500ms) both;
   will-change: clip-path;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pp-entrance {
+  .pp-drop {
     display: none;
   }
 }

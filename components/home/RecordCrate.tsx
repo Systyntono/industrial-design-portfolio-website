@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useDropTransition } from "@/components/transition/DropTransition";
 import type { Project } from "@/data/projects";
 import { TITLE_PX, SUBTITLE_PX, BODY_PX, TAG_PX } from "./typeScale";
 
@@ -33,6 +34,7 @@ export default function RecordCrate({
   coverWidthClass = "w-full xl:w-1/2",
   onHoverChange,
 }: RecordCrateProps) {
+  const { go } = useDropTransition();
   const [hovered, setHovered] = useState<number | null>(null);
   const [coverSize, setCoverSize] = useState({ width: 300, height: 270 });
   const [collapsed, setCollapsed] = useState(false);
@@ -216,6 +218,11 @@ export default function RecordCrate({
             <Link
               href={`/work/${p.slug}`}
               ref={i === 0 ? firstCoverRef : undefined}
+              onClick={(e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                e.preventDefault();
+                go(`/work/${p.slug}`, p.image);
+              }}
               className={`relative block ${effectiveCoverWidthClass} aspect-square overflow-hidden rounded-md bg-zinc-900 shadow-xl shadow-black/60 transition-all duration-500 ease-out`}
               style={{
                 transform: isHovered ? "scale(1.03)" : "scale(1)",

@@ -256,6 +256,7 @@ export default function Hero() {
                 onNext={goNext}
                 onPrev={goPrev}
                 openHref={`/work/${current.projectSlug}`}
+                openImage={current.image}
                 prevDisabled={index === 0}
               />
             </>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
+import DropTransition from "@/components/transition/DropTransition";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -36,8 +37,9 @@ export default function RootLayout({
         )}
         {/* Each page supplies its own chrome — the gallery has its DJ
             controls, project pages have SiteNav and SiteFooter — so the
-            layout stays out of their way. */}
-        {children}
+            layout stays out of their way. DropTransition sits at the root so
+            its paint-drop overlay survives the route change it drives. */}
+        <DropTransition>{children}</DropTransition>
       </body>
     </html>
   );

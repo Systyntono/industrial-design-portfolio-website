@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useDropTransition } from "@/components/transition/DropTransition";
 
 type DjControlsProps = {
   isPlaying: boolean;
@@ -9,6 +10,8 @@ type DjControlsProps = {
   onNext: () => void;
   onPrev: () => void;
   openHref: string;
+  /** Cover image for the current project, so Open plays the paint drop. */
+  openImage?: string | null;
   disabled?: boolean;
   invert?: boolean;
   prevDisabled?: boolean;
@@ -101,10 +104,12 @@ export default function DjControls({
   onNext,
   onPrev,
   openHref,
+  openImage = null,
   disabled = false,
   prevDisabled = false,
   nextDisabled = false,
 }: DjControlsProps) {
+  const { go } = useDropTransition();
   const [openHovered, setOpenHovered] = useState(false);
   const [ppHovered, setPpHovered] = useState(false);
 
@@ -167,8 +172,15 @@ export default function DjControls({
   return (
     <div
       id="dj-controls"
-      className="fixed bottom-16 [@media(max-height:600px)]:bottom-4 left-8 md:left-16 flex flex-col items-center gap-4 [@media(max-height:600px)]:gap-2 z-[150]"
-      style={isShortViewport && logoWidth ? { width: logoWidth } : undefined}
+      // left is the grid's column-1 edge (--pp-edge), the same edge the logo
+      // and title band sit on, so the whole left column lines up regardless
+      // of window width — including past 1600px, where the content column
+      // centres and insets from the viewport.
+      className="fixed bottom-16 [@media(max-height:600px)]:bottom-4 flex flex-col items-center gap-4 [@media(max-height:600px)]:gap-2 z-[150]"
+      style={{
+        left: "var(--pp-edge)",
+        ...(isShortViewport && logoWidth ? { width: logoWidth } : {}),
+      }}
     >
       <div className="flex justify-between gap-2 w-20 [@media(max-height:600px)]:w-14">
         <SkipButton
@@ -198,6 +210,11 @@ export default function DjControls({
           aria-label="Open this project"
           onMouseEnter={() => setOpenHovered(true)}
           onMouseLeave={() => setOpenHovered(false)}
+          onClick={(e) => {
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+            e.preventDefault();
+            go(openHref, openImage);
+          }}
           className="block h-20 w-20 [@media(max-height:600px)]:h-14 [@media(max-height:600px)]:w-14"
         >
           <StagedImage base="button-open" frames={[1, 2, 3, 4]} frame={openFrame} />

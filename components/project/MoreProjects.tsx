@@ -1,5 +1,5 @@
 import Image from "next/image";
-import Link from "next/link";
+import ProjectLink from "@/components/transition/ProjectLink";
 import { heroSlides } from "@/data/heroSlides";
 import { projects } from "@/data/projects";
 import { Col, Grid, GridSection } from "./Grid";
@@ -35,7 +35,11 @@ export default function MoreProjects({ currentSlug }: { currentSlug: string }) {
           <Grid rowGap={SPACE.block}>
             {items.map(({ slide, project }) => (
               <Col key={slide.projectSlug} className="col-span-12 sm:col-span-6 lg:col-span-4">
-                <Link href={`/work/${slide.projectSlug}`} className="group block">
+                <ProjectLink
+                  href={`/work/${slide.projectSlug}`}
+                  heroUrl={slide.image}
+                  className="group block"
+                >
                   <div
                     className="relative w-full overflow-hidden bg-black/5"
                     style={{ aspectRatio: "4 / 3", borderRadius: LAYOUT.radius }}
@@ -56,7 +60,7 @@ export default function MoreProjects({ currentSlug }: { currentSlug: string }) {
                       {project.subtitle}
                     </p>
                   )}
-                </Link>
+                </ProjectLink>
               </Col>
             ))}
           </Grid>
